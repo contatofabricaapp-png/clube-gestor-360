@@ -58,13 +58,13 @@
             'Livre': { cor: 'emerald', icone: '🟢', label: 'Livre', descricao: 'Disponível para uso' },
             'Ocupada': { cor: 'blue', icone: '🔵', label: 'Ocupada', descricao: 'Em uso no momento' },
             'Manutencao': { cor: 'amber', icone: '🟡', label: 'Manutenção', descricao: 'Reparo programado' },
-            'Reservada': { cor: 'purple', icone: '🟣', label: 'Reservada', descricao: 'Evento/Torneio' },
+            'Reservada': { cor: 'purple', icone: '🟣', label: 'Reservada', descricao: 'Evento/Torneio/Aula' },
             'Interditada': { cor: 'red', icone: '🔴', label: 'Interditada', descricao: 'Imprópria para uso' },
             'Limpeza': { cor: 'slate', icone: '⚪', label: 'Limpeza', descricao: 'Em limpeza' },
         };
 
-        const TEMPO_AQUECIMENTO = 5; // minutos
-        const TEMPO_EXTENSAO = 60; // minutos (+1 hora)
+        const TEMPO_AQUECIMENTO = 5; 
+        const TEMPO_EXTENSAO = 60; 
         
         const DIAS_SEMANA = [
             { id: 0, nome: 'Domingo', curto: 'Dom' }, 
@@ -77,7 +77,7 @@
         ];
 
         // =============================================
-        // DADOS INICIAIS DO SISTEMA
+        // DADOS INICIAIS
         // =============================================
         const initialConfig = {
             nome_clube: 'Clube Esportivo Horizonte',
@@ -97,7 +97,6 @@
         ];
 
         const initialRecursos = [
-            // Tênis (1 a 10)
             { id: 1, moduloId: 1, nome: 'Quadra de Tênis 01', capacidade: 4, status: 'Livre', motivo: null },
             { id: 2, moduloId: 1, nome: 'Quadra de Tênis 02', capacidade: 4, status: 'Livre', motivo: null },
             { id: 3, moduloId: 1, nome: 'Quadra de Tênis 03', capacidade: 4, status: 'Manutencao', motivo: 'Troca de rede prevista para sexta' },
@@ -108,26 +107,21 @@
             { id: 8, moduloId: 1, nome: 'Quadra de Tênis 08', capacidade: 4, status: 'Livre', motivo: null },
             { id: 9, moduloId: 1, nome: 'Quadra de Tênis 09', capacidade: 4, status: 'Livre', motivo: null },
             { id: 10, moduloId: 1, nome: 'Quadra de Tênis 10', capacidade: 4, status: 'Livre', motivo: null },
-            // Beach Tennis (11 a 14)
             { id: 11, moduloId: 6, nome: 'Quadra Beach 01', capacidade: 4, status: 'Livre', motivo: null },
             { id: 12, moduloId: 6, nome: 'Quadra Beach 02', capacidade: 4, status: 'Livre', motivo: null },
             { id: 13, moduloId: 6, nome: 'Quadra Beach 03', capacidade: 4, status: 'Livre', motivo: null },
             { id: 14, moduloId: 6, nome: 'Quadra Beach 04', capacidade: 4, status: 'Livre', motivo: null },
-            // Futebol e Outros
             { id: 15, moduloId: 2, nome: 'Campo Society 01', capacidade: 14, status: 'Livre', motivo: null },
-            { id: 16, moduloId: 2, nome: 'Campo Society 02', capacidade: 14, status: 'Interditada', motivo: 'Gramado molhado' },
+            { id: 16, moduloId: 2, nome: 'Campo Society 02', capacidade: 14, status: 'Interditada', motivo: 'Gramado molhado - chuva forte' },
             { id: 17, moduloId: 3, nome: 'Quiosque 01', capacidade: 30, status: 'Livre', motivo: null },
             { id: 18, moduloId: 3, nome: 'Quiosque 02', capacidade: 25, status: 'Livre', motivo: null },
             { id: 19, moduloId: 4, nome: 'Salão Principal', capacidade: 150, status: 'Livre', motivo: null },
         ];
 
         const initialAulas = [
-            { id: 1, recursoId: 6, diasSemana: [1, 2, 3, 4, 5], horaInicio: '07:00', horaFim: '21:00', professor: 'Daniel', nome: 'Aula Daniel', status: 'ativo' }, 
-            { id: 2, recursoId: 10, diasSemana: [1, 2, 3, 4, 5], horaInicio: '07:00', horaFim: '21:00', professor: 'Moacyr', nome: 'Aula Moacyr', status: 'ativo' }, 
-            { id: 3, recursoId: 9, diasSemana: [1, 2, 3, 4, 5], horaInicio: '07:00', horaFim: '21:00',  professor: 'Xitão', nome: 'Aula Xitão', status: 'ativo' }, 
-            { id: 4, recursoId: 6, diasSemana: [6], horaInicio: '07:00', horaFim: '12:00', professor: 'Daniel', nome: 'Aula Daniel', status: 'ativo' }, 
-            { id: 5, recursoId: 10, diasSemana: [6], horaInicio: '07:00', horaFim: '12:00', professor: 'Moacyr', nome: 'Aula Moacyr', status: 'ativo' }, 
-            { id: 6, recursoId: 9, diasSemana: [6], horaInicio: '07:00', horaFim: '12:00',  professor: 'Xitão', nome: 'Aula Xitão', status: 'ativo' }, 
+            { id: 1, recursoId: 1, diasSemana: [1, 3], horaInicio: '18:00', horaFim: '20:00', professor: 'Daniel', nome: 'Treino Performance', status: 'ativo' }, 
+            { id: 2, recursoId: 2, diasSemana: [2, 4], horaInicio: '09:00', horaFim: '11:00', professor: 'Moacyr', nome: 'Aula Iniciante', status: 'ativo' }, 
+            { id: 3, recursoId: 11, diasSemana: [5], horaInicio: '17:00', horaFim: '19:00', professor: 'Xitão', nome: 'Beach Pro', status: 'ativo' }, 
         ];
 
         const initialUsuarios = [
@@ -164,6 +158,10 @@
             if (m > 30) { h += 1; m = 0; } else if (m > 0) { m = 30; }
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         };
+        const getHoraAtualExata = () => {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        };
         const calcularHoraFim = (horaInicio, duracaoMin) => {
             const [h, m] = horaInicio.split(':').map(Number);
             const totalMin = h * 60 + m + duracaoMin;
@@ -188,6 +186,19 @@
             if (dias.length === 7) return 'Todos os dias';
             if (dias.length === 5 && dias.includes(1) && dias.includes(5) && !dias.includes(0) && !dias.includes(6)) return 'Segunda a Sexta';
             return dias.sort().map(d => DIAS_SEMANA.find(ds => ds.id === d)?.curto).join(', ');
+        };
+
+        const getStatusEmTempoReal = (recurso, aulas, reservas) => {
+            if (['Manutencao', 'Interditada', 'Limpeza'].includes(recurso.status)) {
+                return { status: recurso.status, motivo: recurso.motivo };
+            }
+            const horaAtual = getHoraAtualExata();
+            const diaSemana = new Date().getDay();
+            const aulaAgora = aulas.find(a => a.recursoId === recurso.id && a.status === 'ativo' && a.diasSemana.includes(diaSemana) && a.horaInicio <= horaAtual && a.horaFim > horaAtual);
+            if (aulaAgora) return { status: 'Reservada', motivo: `Aula: ${aulaAgora.nome} (${aulaAgora.professor})` };
+            const reservaAgora = reservas.find(r => r.recursoId === recurso.id && ['Em Andamento', 'Confirmada'].includes(r.status) && r.data === hoje() && r.horaInicio <= horaAtual && r.horaFim > horaAtual);
+            if (reservaAgora) return { status: 'Ocupada', motivo: 'Em uso' };
+            return { status: 'Livre', motivo: null };
         };
 
         // =============================================
@@ -328,7 +339,7 @@
         const BottomNav = ({ view, onNavigate, role }) => {
             const items = [
                 { id: 'home', icon: '🏠', label: 'Início' },
-                { id: 'reservas', icon: '📅', label: 'Minhas Reservas' }, // Alterado Label
+                { id: 'reservas', icon: '📅', label: 'Minhas Reservas' },
                 { id: 'fila', icon: '⏳', label: 'Fila' },
                 ...(role !== 'Socio' ? [{ id: 'lousa', icon: '📋', label: 'Lousa' }] : []),
                 ...(role === 'Admin' || role === 'Funcionario' ? [{ id: 'config', icon: '⚙️', label: 'Config' }] : []),
@@ -399,11 +410,15 @@
         };
 
         // HOME DO SÓCIO
-        const HomeSocio = ({ modulos, recursos, user, config, onSelectModulo }) => {
+        const HomeSocio = ({ modulos, recursos, aulas, reservas, user, config, onSelectModulo }) => {
             const modulosAtivos = modulos.filter(m => m.ativo);
             const getStats = (moduloId) => {
                 const recs = recursos.filter(r => r.moduloId === moduloId);
-                return { total: recs.length, livres: recs.filter(r => r.status === 'Livre').length };
+                const livres = recs.filter(r => {
+                    const status = getStatusEmTempoReal(r, aulas, reservas);
+                    return status.status === 'Livre';
+                }).length;
+                return { total: recs.length, livres };
             };
             const estaBloqueado = user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date();
 
@@ -419,7 +434,7 @@
                                 <span className="text-2xl">🚫</span>
                                 <div>
                                     <p className="font-semibold text-red-800">Conta Bloqueada</p>
-                                    <p className="text-sm text-red-600">Você está bloqueado até {formatDateBR(user.bloqueado_ate)}.</p>
+                                    <p className="text-sm text-red-600">Você está bloqueado até {formatDateBR(user.bloqueado_ate)} devido a {config.punicao_noshow_limite} no-shows.</p>
                                 </div>
                             </div>
                         </Card>
@@ -430,7 +445,7 @@
                                 <span className="text-2xl">⚠️</span>
                                 <div>
                                     <p className="font-semibold text-amber-800">Atenção</p>
-                                    <p className="text-sm text-amber-600">Você tem {user.noshow_count}/{config.punicao_noshow_limite} no-shows. Mais {config.punicao_noshow_limite - user.noshow_count} e será bloqueado.</p>
+                                    <p className="text-sm text-amber-600">Você tem {user.noshow_count}/{config.punicao_noshow_limite} no-shows. Mais {config.punicao_noshow_limite - user.noshow_count} e será bloqueado por {config.punicao_dias_bloqueio} dias.</p>
                                 </div>
                             </div>
                         </Card>
@@ -467,8 +482,8 @@
 
             useEffect(() => { if (isCheckinMode && step === 'data') { setDataSelecionada(hoje()); setStep('horario'); } }, [step, isCheckinMode]);
 
-            const recursosLivres = recursos.filter(r => r.moduloId === modulo.id && r.status === 'Livre');
-            const recursosIndisponiveis = recursos.filter(r => r.moduloId === modulo.id && r.status !== 'Livre');
+            const recursosLivres = recursos.filter(r => r.moduloId === modulo.id && getStatusEmTempoReal(r, aulas, reservas).status === 'Livre');
+            const recursosIndisponiveis = recursos.filter(r => r.moduloId === modulo.id && getStatusEmTempoReal(r, aulas, reservas).status !== 'Livre');
 
             const horariosDisponiveis = recursoSelecionado ? gerarHorarios().filter(horario => {
                 const duracaoTotal = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
@@ -499,39 +514,61 @@
                 const duracaoTotal = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
                 const horaFinalUso = isCheckinMode ? getHoraAtualArredondada() : horarioSelecionado;
                 const horaFim = calcularHoraFim(horaFinalUso, duracaoTotal);
-                onReservar({ id: Date.now(), recursoId: recursoSelecionado.id, usuarioId: user.id, data: dataSelecionada, horaInicio: horaFinalUso, horaFim, status: modulo.gratuito ? 'Pendente' : 'Aguardando Pagamento', comprovante_url: comprovante, valor: modulo.valor, iniciadaEm: null, duracaoTotal, criadaEm: new Date().toISOString() });
+                onReservar({
+                    id: Date.now(),
+                    recursoId: recursoSelecionado.id,
+                    usuarioId: user.id,
+                    data: dataSelecionada,
+                    horaInicio: horaFinalUso,
+                    horaFim,
+                    status: modulo.gratuito ? 'Pendente' : 'Aguardando Pagamento',
+                    comprovante_url: comprovante,
+                    valor: modulo.valor,
+                    iniciadaEm: null,
+                    duracaoTotal,
+                    criadaEm: new Date().toISOString()
+                });
             };
 
-            const handleCheckinImediato = () => { const agora = getHoraAtualArredondada(); setHorarioSelecionado(agora); setStep(modulo.gratuito ? 'confirmar' : 'pagamento'); };
+            // CHECK-IN AGORA ENTRA NA FILA
+            const handleCheckinImediato = () => {
+                const agora = getHoraAtualArredondada();
+                onEntrarFila({
+                    id: Date.now(),
+                    moduloId: modulo.id,
+                    recursoId: null, // Qualquer recurso
+                    usuarioId: user.id,
+                    data: hoje(),
+                    horario: agora,
+                    criadoEm: new Date().toISOString(),
+                    status: 'Aguardando',
+                    tipoEntrada: 'checkin'
+                });
+            };
 
             return (
                 <div className="p-4 space-y-4 pb-24">
                     <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">← Voltar</button>
                     <div className="flex items-center gap-3"><span className="text-3xl">{modulo.icone}</span><div><h2 className="text-xl font-bold text-slate-800">{modulo.nome}</h2><p className="text-sm text-slate-500">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor}`}{typeof modulo.duracao === 'number' && ` • ${modulo.duracao}min + ${TEMPO_AQUECIMENTO}min aquec.`}</p></div></div>
                     {modulo.fila_habilitada && (<Card className="p-4 bg-purple-50 border border-purple-200"><div className="flex items-center justify-between"><div><h4 className="font-semibold text-purple-800">⏳ Fila de Espera</h4><p className="text-sm text-purple-600">{modulo.tipo_fila === 'checkin' ? 'Check-in presencial' : 'Agende sua posição'}</p></div><Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button></div></Card>)}
-                    {step === 'recurso' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">Escolha o local:</h3>{recursosLivres.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700 mb-3">Nenhum recurso disponível.</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button>}</Card>) : recursosLivres.map(recurso => (<Card key={recurso.id} className={`p-4 border-2 transition-all ${recursoSelecionado?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:border-slate-200'}`} onClick={() => setRecursoSelecionado(recurso)}><div className="flex items-center justify-between"><div><h4 className="font-semibold text-slate-800">{recurso.nome}</h4><div className="flex items-center gap-2 mt-1"><StatusRecursoBadge status={recurso.status} size="sm" /><span className="text-sm text-slate-500">• {recurso.capacidade} pessoas</span></div></div>{recursoSelecionado?.id === recurso.id && <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center text-white">✓</div>}</div></Card>))}{recursosIndisponiveis.length > 0 && (<div className="pt-4 border-t border-slate-100"><p className="text-sm text-slate-500 mb-2">Indisponíveis:</p>{recursosIndisponiveis.map(recurso => (<div key={recurso.id} className="p-3 bg-slate-50 rounded-xl mb-2 opacity-60"><div className="flex items-center justify-between"><span className="text-slate-600">{recurso.nome}</span><StatusRecursoBadge status={recurso.status} size="sm" /></div></div>))}</div>)}{recursosLivres.length > 0 && <Button className="w-full" disabled={!recursoSelecionado} onClick={() => setStep(isCheckinMode ? 'horario' : 'data')}>Continuar</Button>}</div>)}
+                    {step === 'recurso' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">Escolha o local:</h3>{recursosLivres.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700 mb-3">Nenhum recurso disponível no momento (Aulas/Ocupado).</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>Entrar na Fila de Espera</Button>}</Card>) : recursosLivres.map(recurso => (<Card key={recurso.id} className={`p-4 border-2 transition-all ${recursoSelecionado?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:border-slate-200'}`} onClick={() => setRecursoSelecionado(recurso)}><div className="flex items-center justify-between"><div><h4 className="font-semibold text-slate-800">{recurso.nome}</h4><div className="flex items-center gap-2 mt-1"><StatusRecursoBadge status={recurso.status} size="sm" /><span className="text-sm text-slate-500">• {recurso.capacidade} pessoas</span></div></div>{recursoSelecionado?.id === recurso.id && <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center text-white">✓</div>}</div></Card>))}{recursosIndisponiveis.length > 0 && (<div className="pt-4 border-t border-slate-100"><p className="text-sm text-slate-500 mb-2">Indisponíveis:</p>{recursosIndisponiveis.map(recurso => { const statusReal = getStatusEmTempoReal(recurso, aulas, reservas); return (<div key={recurso.id} className="p-3 bg-slate-50 rounded-xl mb-2 opacity-60"><div className="flex items-center justify-between"><span className="text-slate-600">{recurso.nome}</span><StatusRecursoBadge status={statusReal.status} size="sm" /></div>{statusReal.motivo && <p className="text-xs text-slate-400 mt-1">{statusReal.motivo}</p>}</div>) })}</div>)}{recursosLivres.length > 0 && <Button className="w-full" disabled={!recursoSelecionado} onClick={() => setStep(isCheckinMode ? 'horario' : 'data')}>Continuar</Button>}</div>)}
                     {step === 'data' && !isCheckinMode && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">Escolha a data:</h3><Input type="date" value={dataSelecionada} onChange={(e) => setDataSelecionada(e.target.value)} min={hoje()} /><div className="bg-blue-50 p-3 rounded-xl text-sm text-blue-700">⏰ Antecedência máxima: {modulo.antecedencia_maxima}h</div><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep('recurso')}>Voltar</Button><Button className="flex-1" onClick={() => setStep('horario')}>Continuar</Button></div></div>)}
-                    {step === 'horario' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">{isCheckinMode ? 'Confirmação de Entrada' : 'Escolha o horário:'}</h3><p className="text-sm text-slate-500">{recursoSelecionado.nome} • {formatDateBR(dataSelecionada)}</p>{isCheckinMode ? (<div className="space-y-4 py-4"><Card className="p-6 text-center bg-teal-50 border border-teal-200"><p className="text-lg font-bold text-teal-900 mb-2">Entrada Imediata</p><p className="text-teal-700 text-sm mb-4">Você está prestes a fazer check-in agora.</p><div className="text-3xl font-mono text-teal-800 font-bold mb-4">{getHoraAtualArredondada()}</div><Button className="w-full" onClick={handleCheckinImediato}>Fazer Check-in Agora</Button></Card><p className="text-xs text-center text-slate-400">O horário é registrado automaticamente.</p></div>) : (<>{horariosDisponiveis.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700">Nenhum horário disponível.</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" className="mt-3" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button>}</Card>) : (<div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">{horariosDisponiveis.map(horario => (<button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>))}</div>)}</>)}<div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(isCheckinMode ? 'recurso' : 'data')}>Voltar</Button>{!isCheckinMode && <Button className="flex-1" disabled={!horarioSelecionado} onClick={() => setStep(modulo.gratuito ? 'confirmar' : 'pagamento')}>Continuar</Button>}</div></div>)}
+                    {step === 'horario' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">{isCheckinMode ? 'Confirmação de Entrada' : 'Escolha o horário:'}</h3><p className="text-sm text-slate-500">{recursoSelecionado.nome} • {formatDateBR(dataSelecionada)}</p>{isCheckinMode ? (<div className="space-y-4 py-4"><Card className="p-6 text-center bg-teal-50 border border-teal-200"><p className="text-lg font-bold text-teal-900 mb-2">Check-in na Fila</p><p className="text-teal-700 text-sm mb-4">Você será adicionado à fila de espera.</p><div className="text-3xl font-mono text-teal-800 font-bold mb-4">{getHoraAtualArredondada()}</div><Button className="w-full" onClick={handleCheckinImediato}>Fazer Check-in (Entrar na Fila)</Button></Card><p className="text-xs text-center text-slate-400">Aguarde ser chamado pelo painel.</p></div>) : (<>{horariosDisponiveis.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700">Nenhum horário disponível.</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" className="mt-3" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button>}</Card>) : (<div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">{horariosDisponiveis.map(horario => (<button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>))}</div>)}</>)}<div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(isCheckinMode ? 'recurso' : 'data')}>Voltar</Button>{!isCheckinMode && <Button className="flex-1" disabled={!horarioSelecionado} onClick={() => setStep(modulo.gratuito ? 'confirmar' : 'pagamento')}>Continuar</Button>}</div></div>)}
                     {step === 'pagamento' && (<div className="space-y-4"><h3 className="font-semibold text-slate-700">Pagamento via PIX:</h3><Card className="p-4 bg-slate-50"><p className="text-sm text-slate-500 mb-2">Valor:</p><p className="text-3xl font-bold text-slate-800">R$ {modulo.valor},00</p></Card><Card className="p-4"><p className="text-sm text-slate-500 mb-2">Chave PIX ({config.pix_tipo}):</p><div className="flex items-center gap-2"><code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono truncate">{config.pix_chave}</code><Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText(config.pix_chave)}>Copiar</Button></div></Card><div><label className="block text-sm font-medium text-slate-700 mb-2">Upload do Comprovante:</label><div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-400 transition-colors"><input type="file" accept="image/*" onChange={(e) => setComprovante(e.target.files?.[0]?.name || null)} className="hidden" id="comprovante" /><label htmlFor="comprovante" className="cursor-pointer">{comprovante ? (<div className="text-emerald-600"><p className="text-2xl mb-2">✅</p><p className="font-medium">{comprovante}</p><p className="text-sm">Clique para trocar</p></div>) : (<div className="text-slate-400"><p className="text-2xl mb-2">📎</p><p className="font-medium">Clique para anexar</p><p className="text-sm">JPG, PNG ou PDF</p></div>)}</label></div></div><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep('horario')}>Voltar</Button><Button className="flex-1" disabled={!comprovante} onClick={() => setStep('confirmar')}>Continuar</Button></div></div>)}
                     {step === 'confirmar' && (<div className="space-y-4"><h3 className="font-semibold text-slate-700">Confirme sua reserva:</h3><Card className="p-4 space-y-3"><div className="flex justify-between"><span className="text-slate-500">Local:</span><span className="font-medium text-slate-800">{recursoSelecionado.nome}</span></div><div className="flex justify-between"><span className="text-slate-500">Data:</span><span className="font-medium text-slate-800">{formatDateBR(dataSelecionada)}</span></div><div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium text-slate-800">{horarioSelecionado || getHoraAtualArredondada()} - {calcularHoraFim(horarioSelecionado || getHoraAtualArredondada(), (typeof modulo.duracao === 'number' ? modulo.duracao : 60) + TEMPO_AQUECIMENTO)}</span></div><div className="flex justify-between"><span className="text-slate-500">Duração:</span><span className="font-medium text-slate-800">{typeof modulo.duracao === 'number' ? `${modulo.duracao}min + ${TEMPO_AQUECIMENTO}min aquec.` : 'Diária'}</span></div><div className="flex justify-between"><span className="text-slate-500">Valor:</span><span className="font-medium text-slate-800">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor},00`}</span></div></Card><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(modulo.gratuito ? 'horario' : 'pagamento')}>Voltar</Button><Button className="flex-1" onClick={handleConfirmar}>✓ Confirmar Reserva</Button></div></div>)}
                 </div>
             );
         };
 
-        // MINHAS RESERVAS UNIFICADA (ATUALIZADO)
+        // MINHAS RESERVAS
         const MinhasReservas = ({ reservas, fila, recursos, modulos, user, onCancelar, onCancelarFila }) => {
             const [tab, setTab] = useState('ativas');
-            
-            // FILTROS DE RESERVAS
             const minhasReservas = reservas.filter(r => r.usuarioId === user.id);
             const reservasAtivas = minhasReservas.filter(r => r.data >= hoje() && !['Cancelada', 'No-Show', 'Finalizada'].includes(r.status));
             const reservasHistorico = minhasReservas.filter(r => r.data < hoje() || ['Cancelada', 'No-Show', 'Finalizada'].includes(r.status));
-
-            // FILTROS DE FILA
             const minhaFilaAtiva = fila.filter(f => f.usuarioId === user.id && f.status === 'Aguardando');
             const minhaFilaHistorico = fila.filter(f => f.usuarioId === user.id && ['Cancelado', 'Atendido'].includes(f.status));
 
-            // FUNÇÃO PARA CALCULAR POSIÇÃO REAL NA FILA (FIXED)
             const getPosicaoFila = (itemFila) => {
                 const filaDoModulo = fila.filter(f => f.moduloId === itemFila.moduloId && f.status === 'Aguardando').sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm));
                 return filaDoModulo.findIndex(f => f.id === itemFila.id) + 1;
@@ -567,7 +604,6 @@
                                 const isFila = item.tipo === 'fila';
                                 const modulo = isFila ? getModulo(item.moduloId) : getModulo(getRecurso(item.recursoId)?.moduloId);
                                 const recurso = isFila ? (item.recursoId ? getRecurso(item.recursoId) : null) : getRecurso(item.recursoId);
-                                
                                 return (
                                     <Card key={item.id} className={`p-4 border-l-4 ${isFila ? 'border-l-purple-500' : 'border-l-teal-500'}`}>
                                         <div className="flex justify-between items-start mb-2">
@@ -580,18 +616,11 @@
                                             </div>
                                             {isFila ? <Badge variant="purple" size="sm">Fila</Badge> : <StatusReservaBadge status={item.status} />}
                                         </div>
-
                                         <div className="bg-slate-50 rounded-lg p-3 text-sm space-y-1">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Data:</span>
-                                                <span className="font-medium">{formatDateBR(item.data)}</span>
-                                            </div>
+                                            <div className="flex justify-between"><span className="text-slate-500">Data:</span><span className="font-medium">{formatDateBR(item.data)}</span></div>
                                             {isFila ? (
                                                 <>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-slate-500">Horário Desejado:</span>
-                                                        <span className="font-medium">{item.horario}</span>
-                                                    </div>
+                                                    <div className="flex justify-between"><span className="text-slate-500">Horário Desejado:</span><span className="font-medium">{item.horario}</span></div>
                                                     {tab === 'ativas' && (
                                                         <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
                                                             <span className="text-purple-700 font-bold">Sua Posição:</span>
@@ -600,17 +629,11 @@
                                                     )}
                                                 </>
                                             ) : (
-                                                <div className="flex justify-between">
-                                                    <span className="text-slate-500">Horário:</span>
-                                                    <span className="font-medium">{item.horaInicio} - {item.horaFim}</span>
-                                                </div>
+                                                <div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium">{item.horaInicio} - {item.horaFim}</span></div>
                                             )}
                                         </div>
-
                                         {tab === 'ativas' && (
-                                            <Button variant="danger" size="sm" className="w-full mt-3" onClick={() => isFila ? onCancelarFila(item.id) : onCancelar(item.id)}>
-                                                {isFila ? 'Sair da Fila' : 'Cancelar Reserva'}
-                                            </Button>
+                                            <Button variant="danger" size="sm" className="w-full mt-3" onClick={() => isFila ? onCancelarFila(item.id) : onCancelar(item.id)}>{isFila ? 'Sair da Fila' : 'Cancelar Reserva'}</Button>
                                         )}
                                     </Card>
                                 );
@@ -648,14 +671,8 @@
                 <div className="p-4 space-y-4 pb-24">
                     <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">← Voltar</button>
                     <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <span className="text-3xl">{modulo.icone}</span>
-                            <span className="absolute -top-1 -right-1 text-lg">⏳</span>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-800">Fila de Espera</h2>
-                            <p className="text-sm text-slate-500">{modulo.nome}</p>
-                        </div>
+                        <div className="relative"><span className="text-3xl">{modulo.icone}</span><span className="absolute -top-1 -right-1 text-lg">⏳</span></div>
+                        <div><h2 className="text-xl font-bold text-slate-800">Fila de Espera</h2><p className="text-sm text-slate-500">{modulo.nome}</p></div>
                     </div>
                     <Card className="p-4 bg-purple-50 border border-purple-200">
                         <p className="text-sm text-purple-700">{modulo.tipo_fila === 'checkin' ? `📍 Check-in presencial - Compareça até ${modulo.antecedencia_fila} minutos antes.` : `📅 Agendamento - Reserve sua posição na fila.`}</p>
@@ -676,21 +693,12 @@
                         </Card>
                     </div>
                     {tipoEspera === 'especifica' && (
-                        <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-slate-700">Escolha:</h4>
-                            {recursosDisponiveis.map(recurso => (
-                                <button key={recurso.id} onClick={() => setRecursoSelecionado(recurso)} className={`w-full p-3 rounded-xl text-left transition-all ${recursoSelecionado?.id === recurso.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-slate-50 border-2 border-transparent'}`}>{recurso.nome}</button>
-                            ))}
-                        </div>
+                        <div className="space-y-2"><h4 className="text-sm font-medium text-slate-700">Escolha:</h4>{recursosDisponiveis.map(recurso => (<button key={recurso.id} onClick={() => setRecursoSelecionado(recurso)} className={`w-full p-3 rounded-xl text-left transition-all ${recursoSelecionado?.id === recurso.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-slate-50 border-2 border-transparent'}`}>{recurso.nome}</button>))}</div>
                     )}
                     {modulo.tipo_fila === 'agendamento' && <Input type="date" label="Data:" value={dataSelecionada} onChange={(e) => setDataSelecionada(e.target.value)} min={hoje()} />}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-slate-700">Horário desejado:</h4>
-                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                            {gerarHorarios().map(horario => (
-                                <button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>
-                            ))}
-                        </div>
+                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">{gerarHorarios().map(horario => (<button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>))}</div>
                     </div>
                     {jaEstaNaFila && <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">⚠️ Você já está na fila para este horário!</div>}
                     <Button variant="purple" className="w-full" disabled={!horarioSelecionado || (tipoEspera === 'especifica' && !recursoSelecionado) || jaEstaNaFila} onClick={handleConfirmar}>Entrar na Fila de Espera</Button>
@@ -698,12 +706,9 @@
             );
         };
 
-        // TELA DE FILA GERAL (VISUALIZAÇÃO CORRIGIDA)
+        // TELA DE FILA GERAL
         const TelaFilaEspera = ({ modulos, fila, user, onCancelarFila }) => {
-            const modulosComFila = modulos.filter(m => m.ativo && m.fila_habilitada);
             const minhaFila = fila.filter(f => f.usuarioId === user.id && f.status === 'Aguardando');
-
-            // CORREÇÃO: Calcula a posição baseada na fila global do módulo
             const getPosicaoReal = (itemFila) => {
                 const filaGeral = fila.filter(f => f.moduloId === itemFila.moduloId && f.status === 'Aguardando').sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm));
                 return filaGeral.findIndex(f => f.id === itemFila.id) + 1;
@@ -712,16 +717,10 @@
             return (
                 <div className="p-4 space-y-4 pb-24">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2>
-                            <p className="text-sm text-slate-500">Suas posições atuais</p>
-                        </div>
+                        <div><h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2><p className="text-sm text-slate-500">Suas posições atuais</p></div>
                     </div>
                     {minhaFila.length === 0 ? (
-                        <Card className="p-8 text-center">
-                            <span className="text-4xl mb-4 block">⏳</span>
-                            <p className="text-slate-500">Você não está em nenhuma fila</p>
-                        </Card>
+                        <Card className="p-8 text-center"><span className="text-4xl mb-4 block">⏳</span><p className="text-slate-500">Você não está em nenhuma fila</p></Card>
                     ) : (
                         <div className="space-y-3">
                             {minhaFila.map(f => {
@@ -732,10 +731,7 @@
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-lg">{posicao}º</div>
-                                                <div>
-                                                    <h3 className="font-semibold text-slate-800">{modulo?.nome}</h3>
-                                                    <p className="text-sm text-slate-500">{f.horario} • {formatDateBR(f.data)}</p>
-                                                </div>
+                                                <div><h3 className="font-semibold text-slate-800">{modulo?.nome}</h3><p className="text-sm text-slate-500">{f.horario} • {formatDateBR(f.data)}</p></div>
                                             </div>
                                             <Button variant="danger" size="sm" onClick={() => onCancelarFila(f.id)}>Sair</Button>
                                         </div>
@@ -748,8 +744,8 @@
             );
         };
 
-        // LOUSA DIGITAL (RESTAURADA)
-        const LousaDigital = ({ modulos, recursos, reservas, usuarios, fila, config, onStart, onEncerrar, onEstender, onNoShow, onAprovarPagamento, onAtribuirFila }) => {
+        // LOUSA DIGITAL
+        const LousaDigital = ({ modulos, recursos, reservas, usuarios, fila, config, onStart, onEncerrar, onEstender, onNoShow, onAprovarPagamento, onAtribuirFila, aulas }) => {
             const [moduloFiltro, setModuloFiltro] = useState(null);
             const [, forceUpdate] = useState(0);
             useEffect(() => { const i = setInterval(() => forceUpdate(n => n + 1), 1000); return () => clearInterval(i); }, []);
@@ -789,28 +785,30 @@
                             const usuario = reserva ? getUsuario(reserva.usuarioId) : null;
                             const filaRecurso = getFilaRecurso(recurso);
                             const statusTempo = reserva ? getStatusTempo(reserva) : null;
-                            const podeUsar = recurso.status === 'Livre';
-                            const statusCfg = STATUS_RECURSOS[recurso.status];
+                            const statusReal = getStatusEmTempoReal(recurso, aulas, reservas);
+                            const podeUsar = statusReal.status === 'Livre';
+                            const statusCfg = STATUS_RECURSOS[statusReal.status] || STATUS_RECURSOS['Livre'];
 
                             return (
-                                <Card key={recurso.id} className={`p-4 ${!podeUsar ? 'opacity-70' : ''}`}>
+                                <Card key={recurso.id} className={`p-4 ${!podeUsar && !reserva ? 'opacity-70' : ''}`}>
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xl">{modulo?.icone}</span>
                                             <div>
                                                 <h3 className="font-bold text-slate-800">{recurso.nome}</h3>
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <StatusRecursoBadge status={recurso.status} size="sm" />
+                                                    <StatusRecursoBadge status={statusReal.status} size="sm" />
                                                     {filaRecurso.length > 0 && podeUsar && <Badge variant="purple" size="sm">⏳ {filaRecurso.length} na fila</Badge>}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    {!podeUsar ? (
+                                    
+                                    {!podeUsar && !reserva ? (
                                         <div className="text-center py-4 rounded-xl bg-slate-100">
                                             <p className="text-lg">{statusCfg.icone}</p>
                                             <p className="font-medium text-slate-700">{statusCfg.label}</p>
-                                            {recurso.motivo && <p className="text-xs text-slate-500 mt-1">{recurso.motivo}</p>}
+                                            {statusReal.motivo && <p className="text-xs text-slate-500 mt-1">{statusReal.motivo}</p>}
                                         </div>
                                     ) : reserva ? (
                                         <div className="space-y-3">
@@ -1001,7 +999,6 @@
                         </div>
                     )}
 
-                    {/* MODAIS RESTAURADOS COMPLETOS */}
                     <Modal isOpen={!!modalUsuario} onClose={() => setModalUsuario(null)} title={modalUsuario?.id ? "Editar Usuário" : "Novo Usuário"}>
                         {modalUsuario && (
                             <div className="space-y-4">
@@ -1082,7 +1079,7 @@
             const notify = (message, type = 'success') => setNotif({ message, type });
 
             // HANDLERS RESERVA
-            const handleReservar = (r) => { setReservas([...reservas, r]); setSelectedModulo(null); notify(r.status === 'Pendente' ? 'Check-in realizado! ✓' : 'Reserva realizada! ✓'); setView('reservas'); };
+            const handleReservar = (r) => { setReservas([...reservas, r]); setSelectedModulo(null); notify('Reserva realizada! ✓'); setView('reservas'); };
             const handleCancelarReserva = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Cancelada' } : r)); notify('Reserva cancelada.', 'warning'); };
             const handleStart = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Em Andamento', iniciadaEm: new Date().toISOString() } : r)); notify('⏱️ Tempo iniciado! Bom jogo!'); };
             const handleEncerrar = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Finalizada' } : r)); notify('Reserva encerrada.'); };
@@ -1136,12 +1133,12 @@
                 <div className="min-h-screen bg-slate-50">
                     <Header user={userAtualizado} onLogout={() => { setUser(null); handleNavigate('home'); }} />
                     <main className="max-w-7xl mx-auto">
-                        {view === 'home' && !selectedModulo && !moduloParaFila && <HomeSocio modulos={modulos} recursos={recursos} user={userAtualizado} config={config} onSelectModulo={setSelectedModulo} />}
+                        {view === 'home' && !selectedModulo && !moduloParaFila && <HomeSocio modulos={modulos} recursos={recursos} aulas={aulas} reservas={reservas} user={userAtualizado} config={config} onSelectModulo={setSelectedModulo} />}
                         {view === 'home' && selectedModulo && !moduloParaFila && <TelaReserva modulo={selectedModulo} recursos={recursos} reservas={reservas} aulas={aulas} user={userAtualizado} config={config} onReservar={handleReservar} onVoltar={handleVoltar} onEntrarFila={setModuloParaFila} />}
                         {moduloParaFila && <TelaEntrarFila modulo={moduloParaFila} recursos={recursos} user={userAtualizado} fila={fila} onEntrar={handleEntrarFila} onVoltar={handleVoltar} />}
                         {view === 'reservas' && <MinhasReservas reservas={reservas} fila={fila} recursos={recursos} modulos={modulos} user={userAtualizado} onCancelar={handleCancelarReserva} onCancelarFila={handleCancelarFila} />}
                         {view === 'fila' && <TelaFilaEspera modulos={modulos} fila={fila} user={userAtualizado} onCancelarFila={handleCancelarFila} />}
-                        {view === 'lousa' && userAtualizado.role !== 'Socio' && <LousaDigital modulos={modulos} recursos={recursos} reservas={reservas} usuarios={usuarios} fila={fila} config={config} onStart={handleStart} onEncerrar={handleEncerrar} onEstender={handleEstender} onNoShow={handleNoShow} onAprovarPagamento={handleAprovarPagamento} onAtribuirFila={handleAtribuirFila} />}
+                        {view === 'lousa' && userAtualizado.role !== 'Socio' && <LousaDigital modulos={modulos} recursos={recursos} reservas={reservas} usuarios={usuarios} fila={fila} aulas={aulas} config={config} onStart={handleStart} onEncerrar={handleEncerrar} onEstender={handleEstender} onNoShow={handleNoShow} onAprovarPagamento={handleAprovarPagamento} onAtribuirFila={handleAtribuirFila} />}
                         {view === 'config' && (userAtualizado.role === 'Admin' || userAtualizado.role === 'Funcionario') && <PainelConfig currentUser={userAtualizado} config={config} modulos={modulos} recursos={recursos} usuarios={usuarios} aulas={aulas} onUpdateConfig={handleUpdateConfig} onUpdateModulo={handleUpdateModulo} onAddRecurso={handleAddRecurso} onUpdateRecurso={handleUpdateRecurso} onDeleteRecurso={handleDeleteRecurso} onAddAula={handleAddAula} onDeleteAula={handleDeleteAula} onUpdateAula={handleUpdateAula} onAddUsuario={handleAddUsuario} onUpdateUsuario={handleUpdateUsuario} />}
                     </main>
                     <BottomNav view={view} onNavigate={handleNavigate} role={userAtualizado.role} />
