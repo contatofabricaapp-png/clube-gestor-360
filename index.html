@@ -61,8 +61,13 @@
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
         .animate-modal-in { animation: modal-in 0.25s ease-out forwards; }
         .animate-slide-down { animation: slide-down 0.3s ease-out forwards; }
+        .animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
@@ -97,13 +102,93 @@
             punicao_dias_bloqueio: 7
         };
 
+        // MÓDULOS COM CONFIGURAÇÃO DE FILA
         const initialModulos = [
-            { id: 1, nome_categoria: 'Tênis', icone: '🎾', status_ativo: true, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 60, antecedencia_maxima: 48, janela_cancelamento: 2 },
-            { id: 2, nome_categoria: 'Futebol', icone: '⚽', status_ativo: true, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 90, antecedencia_maxima: 72, janela_cancelamento: 4 },
-            { id: 3, nome_categoria: 'Quiosque', icone: '🏠', status_ativo: true, tipo_cobranca: 'Pago', valor_padrao: 350, unidade_tempo: 'Diária', antecedencia_maxima: 720, janela_cancelamento: 48 },
-            { id: 4, nome_categoria: 'Salão de Festas', icone: '🎉', status_ativo: true, tipo_cobranca: 'Pago', valor_padrao: 800, unidade_tempo: 'Diária', antecedencia_maxima: 720, janela_cancelamento: 72 },
-            { id: 5, nome_categoria: 'Piscina', icone: '🏊', status_ativo: false, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 120, antecedencia_maxima: 24, janela_cancelamento: 1 },
-            { id: 6, nome_categoria: 'Academia', icone: '🏋️', status_ativo: false, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 60, antecedencia_maxima: 24, janela_cancelamento: 1 },
+            { 
+                id: 1, 
+                nome_categoria: 'Tênis', 
+                icone: '🎾', 
+                status_ativo: true, 
+                tipo_cobranca: 'Gratuito', 
+                valor_padrao: 0, 
+                unidade_tempo: 60, 
+                antecedencia_maxima: 48, 
+                janela_cancelamento: 2,
+                // NOVAS CONFIGS DE FILA
+                fila_habilitada: true,
+                tipo_fila: 'checkin', // 'checkin' ou 'agendamento'
+                antecedencia_fila_minutos: 30 // tempo antes do horário que pode entrar na fila
+            },
+            { 
+                id: 2, 
+                nome_categoria: 'Futebol', 
+                icone: '⚽', 
+                status_ativo: true, 
+                tipo_cobranca: 'Gratuito', 
+                valor_padrao: 0, 
+                unidade_tempo: 90, 
+                antecedencia_maxima: 72, 
+                janela_cancelamento: 4,
+                fila_habilitada: true,
+                tipo_fila: 'agendamento',
+                antecedencia_fila_minutos: 60
+            },
+            { 
+                id: 3, 
+                nome_categoria: 'Quiosque', 
+                icone: '🏠', 
+                status_ativo: true, 
+                tipo_cobranca: 'Pago', 
+                valor_padrao: 350, 
+                unidade_tempo: 'Diária', 
+                antecedencia_maxima: 720, 
+                janela_cancelamento: 48,
+                fila_habilitada: false,
+                tipo_fila: 'agendamento',
+                antecedencia_fila_minutos: 0
+            },
+            { 
+                id: 4, 
+                nome_categoria: 'Salão de Festas', 
+                icone: '🎉', 
+                status_ativo: true, 
+                tipo_cobranca: 'Pago', 
+                valor_padrao: 800, 
+                unidade_tempo: 'Diária', 
+                antecedencia_maxima: 720, 
+                janela_cancelamento: 72,
+                fila_habilitada: false,
+                tipo_fila: 'agendamento',
+                antecedencia_fila_minutos: 0
+            },
+            { 
+                id: 5, 
+                nome_categoria: 'Piscina', 
+                icone: '🏊', 
+                status_ativo: false, 
+                tipo_cobranca: 'Gratuito', 
+                valor_padrao: 0, 
+                unidade_tempo: 120, 
+                antecedencia_maxima: 24, 
+                janela_cancelamento: 1,
+                fila_habilitada: false,
+                tipo_fila: 'checkin',
+                antecedencia_fila_minutos: 15
+            },
+            { 
+                id: 6, 
+                nome_categoria: 'Academia', 
+                icone: '🏋️', 
+                status_ativo: false, 
+                tipo_cobranca: 'Gratuito', 
+                valor_padrao: 0, 
+                unidade_tempo: 60, 
+                antecedencia_maxima: 24, 
+                janela_cancelamento: 1,
+                fila_habilitada: false,
+                tipo_fila: 'checkin',
+                antecedencia_fila_minutos: 15
+            },
         ];
 
         const initialRecursos = [
@@ -145,6 +230,15 @@
             return `${day}/${month}/${year}`;
         }
 
+        function formatDateTime(date) {
+            return date.toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
         function getTimeProgress(horaInicio, horaFim) {
             const now = new Date();
             const [startH, startM] = horaInicio.split(':').map(Number);
@@ -169,6 +263,44 @@
             return 'bg-red-500';
         }
 
+        // Gera horários de hora cheia e meia hora
+        function gerarHorariosDisponiveis(modulo, recursoId, data, reservas) {
+            const horarios = [];
+            const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
+            
+            // Horários: 06:00, 06:30, 07:00, 07:30, etc.
+            for (let h = 6; h < 22; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    const hora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    const horaFimMinutos = h * 60 + m + duracao;
+                    const horaFimH = Math.floor(horaFimMinutos / 60);
+                    const horaFimM = horaFimMinutos % 60;
+                    const horaFim = `${String(horaFimH).padStart(2, '0')}:${String(horaFimM).padStart(2, '0')}`;
+                    
+                    // Verifica conflito com reservas existentes
+                    const horaInicioNum = h * 60 + m;
+                    const horaFimNum = horaFimMinutos;
+                    
+                    const conflito = reservas.some(r => {
+                        if (r.id_recurso !== recursoId || r.data !== data || r.status === 'Cancelada' || r.status === 'No-Show') {
+                            return false;
+                        }
+                        const [rStartH, rStartM] = r.hora_inicio.split(':').map(Number);
+                        const [rEndH, rEndM] = r.hora_fim.split(':').map(Number);
+                        const rStartNum = rStartH * 60 + rStartM;
+                        const rEndNum = rEndH * 60 + rEndM;
+                        
+                        return (horaInicioNum < rEndNum && horaFimNum > rStartNum);
+                    });
+                    
+                    if (!conflito && horaFimH <= 22) {
+                        horarios.push({ inicio: hora, fim: horaFim });
+                    }
+                }
+            }
+            return horarios;
+        }
+
         const generateInitialReservas = () => {
             const hoje = new Date();
             return [
@@ -177,6 +309,35 @@
                 { id: 3, id_recurso: 4, id_usuario: 5, data: formatDate(hoje), hora_inicio: '18:00', hora_fim: '19:30', status: 'Confirmada', url_comprovante_pix: null, valor: 0 },
                 { id: 4, id_recurso: 6, id_usuario: 3, data: formatDate(addDays(hoje, 7)), hora_inicio: '08:00', hora_fim: '22:00', status: 'Aguardando Aprovação', url_comprovante_pix: 'comprovante_1.jpg', valor: 350 },
                 { id: 5, id_recurso: 9, id_usuario: 4, data: formatDate(addDays(hoje, 14)), hora_inicio: '08:00', hora_fim: '22:00', status: 'Confirmada', url_comprovante_pix: 'comprovante_2.jpg', valor: 800 },
+            ];
+        };
+
+        // FILA DE ESPERA INICIAL
+        const generateInitialFilaEspera = () => {
+            const hoje = new Date();
+            return [
+                { 
+                    id: 1, 
+                    id_modulo: 1, // Tênis
+                    id_recurso: null, // null = qualquer quadra
+                    id_usuario: 5, // Ana
+                    data: formatDate(hoje),
+                    horario_desejado: '10:00',
+                    created_at: new Date(hoje.getTime() - 30 * 60000).toISOString(), // 30 min atrás
+                    status: 'Aguardando', // 'Aguardando', 'Atendido', 'Cancelado', 'Expirado'
+                    tipo_entrada: 'checkin' // 'checkin' ou 'agendamento'
+                },
+                { 
+                    id: 2, 
+                    id_modulo: 1,
+                    id_recurso: 1, // Quadra específica: Quadra 01
+                    id_usuario: 4, // Carlos
+                    data: formatDate(hoje),
+                    horario_desejado: '10:00',
+                    created_at: new Date(hoje.getTime() - 15 * 60000).toISOString(), // 15 min atrás
+                    status: 'Aguardando',
+                    tipo_entrada: 'checkin'
+                },
             ];
         };
 
@@ -200,6 +361,7 @@
                 success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
                 warning: 'bg-amber-500 hover:bg-amber-600 text-white',
                 ghost: 'hover:bg-slate-100 text-slate-600',
+                purple: 'bg-purple-500 hover:bg-purple-600 text-white',
             };
             
             const sizes = {
@@ -305,12 +467,12 @@
         };
 
         const TabBar = ({ tabs, active, onChange }) => (
-            <div className="flex bg-slate-100 rounded-xl p-1">
+            <div className="flex bg-slate-100 rounded-xl p-1 overflow-x-auto">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
-                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             active === tab.id 
                                 ? 'bg-white text-teal-700 shadow-sm' 
                                 : 'text-slate-600 hover:text-slate-800'
@@ -339,10 +501,32 @@
                 'Finalizada': { variant: 'default', label: 'Finalizada' },
                 'Aguardando Aprovação': { variant: 'info', label: 'Aguardando' },
                 'Cancelada': { variant: 'danger', label: 'Cancelada' },
+                'Aguardando': { variant: 'purple', label: 'Na Fila' },
+                'Atendido': { variant: 'success', label: 'Atendido' },
+                'Expirado': { variant: 'default', label: 'Expirado' },
             };
             
             const { variant, label } = config[status] || { variant: 'default', label: status };
             return <Badge variant={variant}>{label}</Badge>;
+        };
+
+        const Notification = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+            
+            const colors = {
+                success: 'bg-emerald-500',
+                warning: 'bg-amber-500',
+                error: 'bg-red-500',
+            };
+            
+            return (
+                <div className={`fixed top-4 left-4 right-4 z-50 p-4 rounded-xl text-white font-medium shadow-lg animate-slide-down ${colors[type]}`}>
+                    {message}
+                </div>
+            );
         };
 
         // ============================================
@@ -385,6 +569,7 @@
             const navItems = [
                 { id: 'home', icon: '🏠', label: 'Início' },
                 { id: 'reservas', icon: '📅', label: 'Reservas' },
+                { id: 'fila', icon: '⏳', label: 'Fila' },
                 ...(role !== 'Socio' ? [{ id: 'lousa', icon: '📋', label: 'Lousa' }] : []),
                 ...(role === 'Admin' ? [{ id: 'config', icon: '⚙️', label: 'Config' }] : []),
             ];
@@ -411,89 +596,64 @@
             );
         };
 
-        // LOGIN SCREEN
-        const LoginScreen = ({ usuarios, onLogin }) => {
-            const [selectedUser, setSelectedUser] = useState(null);
-            const [password, setPassword] = useState('');
-            
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-800 flex items-center justify-center p-4">
-                    <Card className="w-full max-w-md p-8">
-                        <div className="text-center mb-8">
-                            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4 shadow-lg">
-                                C
-                            </div>
-                            <h1 className="text-2xl font-bold text-slate-800">Clube Gestor 360</h1>
-                            <p className="text-slate-500 mt-1">Sistema de Gestão Modular</p>
+        // TELA DE LOGIN
+        const TelaLogin = ({ usuarios, onLogin }) => (
+            <div className="min-h-screen bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center p-4">
+                <Card className="w-full max-w-sm p-6">
+                    <div className="text-center mb-6">
+                        <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">
+                            C
                         </div>
-                        
-                        <div className="space-y-4">
-                            <Select 
-                                label="Selecione o Usuário"
-                                value={selectedUser?.id || ''}
-                                onChange={(e) => setSelectedUser(usuarios.find(u => u.id === Number(e.target.value)))}
-                                options={[
-                                    { value: '', label: 'Selecionar...' },
-                                    ...usuarios.map(u => ({ value: u.id, label: `${u.nome} (${u.role})` }))
-                                ]}
-                            />
-                            
-                            <Input 
-                                label="Senha"
-                                type="password"
-                                placeholder="Digite sua senha"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                            
-                            <Button 
-                                className="w-full mt-6" 
-                                size="lg"
-                                onClick={() => selectedUser && onLogin(selectedUser)}
-                                disabled={!selectedUser}
+                        <h1 className="text-xl font-bold text-slate-800">Clube Gestor 360</h1>
+                        <p className="text-sm text-slate-500">Selecione um usuário para entrar</p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        {usuarios.map(user => (
+                            <button
+                                key={user.id}
+                                onClick={() => onLogin(user)}
+                                className="w-full p-4 bg-slate-50 hover:bg-slate-100 rounded-xl flex items-center justify-between transition-colors"
                             >
-                                Entrar
-                            </Button>
-                        </div>
-                        
-                        <p className="text-xs text-center text-slate-400 mt-6">
-                            Demo: selecione qualquer usuário para entrar
-                        </p>
-                    </Card>
-                </div>
-            );
-        };
+                                <div className="text-left">
+                                    <p className="font-semibold text-slate-800">{user.nome}</p>
+                                    <p className="text-sm text-slate-500">{user.matricula}</p>
+                                </div>
+                                <Badge variant={user.role === 'Admin' ? 'purple' : user.role === 'Funcionario' ? 'info' : 'success'}>
+                                    {user.role}
+                                </Badge>
+                            </button>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+        );
 
-        // HOME SÓCIO - MÓDULOS DINÂMICOS
+        // HOME DO SÓCIO
         const HomeSocio = ({ modulos, onSelectModulo }) => {
             const modulosAtivos = modulos.filter(m => m.status_ativo);
             
             return (
-                <div className="p-4 space-y-6">
+                <div className="p-4 space-y-4">
                     <div>
                         <h2 className="text-xl font-bold text-slate-800">Olá! 👋</h2>
                         <p className="text-slate-500">O que você quer fazer hoje?</p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {modulosAtivos.map(modulo => (
                             <Card 
                                 key={modulo.id}
-                                className="p-6 hover:shadow-lg transition-all hover:-translate-y-1"
+                                className="p-4 text-center"
                                 onClick={() => onSelectModulo(modulo)}
                             >
-                                <div className="text-4xl mb-3">{modulo.icone}</div>
-                                <h3 className="font-bold text-slate-800">{modulo.nome_categoria}</h3>
+                                <span className="text-4xl mb-2 block">{modulo.icone}</span>
+                                <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
                                 <p className="text-xs text-slate-500 mt-1">
-                                    {modulo.tipo_cobranca === 'Pago' 
-                                        ? `R$ ${modulo.valor_padrao}`
-                                        : 'Gratuito'
-                                    }
+                                    {modulo.tipo_cobranca === 'Pago' ? `R$ ${modulo.valor_padrao}` : 'Gratuito'}
                                 </p>
-                                {modulo.tipo_cobranca === 'Pago' && (
-                                    <div className="mt-2">
-                                        <Badge variant="warning" size="sm">Pago</Badge>
-                                    </div>
+                                {modulo.fila_habilitada && (
+                                    <Badge variant="purple" size="sm">Fila</Badge>
                                 )}
                             </Card>
                         ))}
@@ -509,7 +669,7 @@
         };
 
         // TELA DE RESERVA DE RECURSO
-        const ReservaRecurso = ({ modulo, recursos, reservas, currentUser, onReservar, onVoltar }) => {
+        const ReservaRecurso = ({ modulo, recursos, reservas, currentUser, onReservar, onVoltar, onEntrarFila }) => {
             const [step, setStep] = useState('recurso');
             const [selectedRecurso, setSelectedRecurso] = useState(null);
             const [selectedData, setSelectedData] = useState(formatDate(new Date()));
@@ -518,29 +678,9 @@
             
             const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Ativo');
             
-            const gerarHorarios = () => {
-                const horarios = [];
-                const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
-                
-                for (let h = 6; h < 22; h++) {
-                    const hora = `${String(h).padStart(2, '0')}:00`;
-                    const horaFimH = h + Math.floor(duracao / 60);
-                    const horaFimM = duracao % 60;
-                    const horaFim = `${String(horaFimH).padStart(2, '0')}:${String(horaFimM).padStart(2, '0')}`;
-                    
-                    const reservado = reservas.some(r => 
-                        r.id_recurso === selectedRecurso?.id && 
-                        r.data === selectedData && 
-                        r.hora_inicio === hora &&
-                        r.status !== 'Cancelada'
-                    );
-                    
-                    if (!reservado && horaFimH <= 22) {
-                        horarios.push({ inicio: hora, fim: horaFim });
-                    }
-                }
-                return horarios;
-            };
+            const horariosDisponiveis = selectedRecurso 
+                ? gerarHorariosDisponiveis(modulo, selectedRecurso.id, selectedData, reservas)
+                : [];
             
             const handleConfirmar = () => {
                 const novaReserva = {
@@ -576,6 +716,26 @@
                             </p>
                         </div>
                     </div>
+
+                    {/* Botão de entrar na fila (se habilitado) */}
+                    {modulo.fila_habilitada && (
+                        <Card className="p-4 bg-purple-50 border-purple-200">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h4 className="font-semibold text-purple-800">⏳ Fila de Espera</h4>
+                                    <p className="text-sm text-purple-600">
+                                        {modulo.tipo_fila === 'checkin' 
+                                            ? 'Check-in presencial disponível'
+                                            : 'Agende sua posição na fila'
+                                        }
+                                    </p>
+                                </div>
+                                <Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>
+                                    Entrar na Fila
+                                </Button>
+                            </div>
+                        </Card>
+                    )}
                     
                     {/* STEP 1: ESCOLHER RECURSO */}
                     {step === 'recurso' && (
@@ -641,12 +801,12 @@
                             <h3 className="font-semibold text-slate-700">Escolha o horário:</h3>
                             <p className="text-sm text-slate-500">{selectedRecurso.nome_identificador} • {formatDateBR(selectedData)}</p>
                             
-                            <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
-                                {gerarHorarios().map(horario => (
+                            <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                                {horariosDisponiveis.map(horario => (
                                     <button
                                         key={horario.inicio}
                                         onClick={() => setSelectedHorario(horario)}
-                                        className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                                        className={`p-2 rounded-xl text-sm font-medium transition-all ${
                                             selectedHorario?.inicio === horario.inicio
                                                 ? 'bg-teal-500 text-white'
                                                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -656,6 +816,17 @@
                                     </button>
                                 ))}
                             </div>
+                            
+                            {horariosDisponiveis.length === 0 && (
+                                <div className="text-center py-8 text-slate-400">
+                                    <p>Nenhum horário disponível nesta data.</p>
+                                    {modulo.fila_habilitada && (
+                                        <Button variant="purple" size="sm" className="mt-3" onClick={() => onEntrarFila(modulo)}>
+                                            Entrar na Fila de Espera
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
                             
                             <div className="flex gap-2">
                                 <Button variant="secondary" onClick={() => setStep('data')}>Voltar</Button>
@@ -683,7 +854,7 @@
                             <Card className="p-4">
                                 <p className="text-sm text-slate-500 mb-2">Chave PIX:</p>
                                 <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono">
+                                    <code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono truncate">
                                         contato@clubehorizonte.com.br
                                     </code>
                                     <Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText('contato@clubehorizonte.com.br')}>
@@ -698,26 +869,22 @@
                                 </label>
                                 <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center">
                                     <input 
-                                        type="file" 
+                                        type="file"
                                         accept="image/*"
-                                        onChange={(e) => setComprovante(e.target.files[0]?.name || null)}
+                                        onChange={(e) => setComprovante(e.target.files?.[0]?.name || null)}
                                         className="hidden"
                                         id="comprovante"
                                     />
                                     <label htmlFor="comprovante" className="cursor-pointer">
                                         {comprovante ? (
-                                            <div className="text-teal-600">
-                                                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                                <p className="font-medium">{comprovante}</p>
+                                            <div className="text-emerald-600">
+                                                <p className="font-medium">✓ {comprovante}</p>
+                                                <p className="text-sm">Clique para trocar</p>
                                             </div>
                                         ) : (
                                             <div className="text-slate-400">
-                                                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                <p>Toque para enviar foto</p>
+                                                <p className="text-2xl mb-2">📎</p>
+                                                <p className="font-medium">Clique para anexar</p>
                                             </div>
                                         )}
                                     </label>
@@ -731,7 +898,7 @@
                                     disabled={!comprovante}
                                     onClick={() => setStep('confirmacao')}
                                 >
-                                    Enviar Comprovante
+                                    Continuar
                                 </Button>
                             </div>
                         </div>
@@ -740,14 +907,7 @@
                     {/* STEP 5: CONFIRMAÇÃO */}
                     {step === 'confirmacao' && (
                         <div className="space-y-4">
-                            <div className="text-center">
-                                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-800">Confirmar Reserva</h3>
-                            </div>
+                            <h3 className="font-semibold text-slate-700">Confirme sua reserva:</h3>
                             
                             <Card className="p-4 space-y-3">
                                 <div className="flex justify-between">
@@ -762,24 +922,16 @@
                                     <span className="text-slate-500">Horário:</span>
                                     <span className="font-medium text-slate-800">{selectedHorario.inicio} - {selectedHorario.fim}</span>
                                 </div>
-                                {modulo.tipo_cobranca === 'Pago' && (
-                                    <div className="flex justify-between border-t pt-3">
-                                        <span className="text-slate-500">Valor:</span>
-                                        <span className="font-bold text-teal-600">R$ {modulo.valor_padrao},00</span>
-                                    </div>
-                                )}
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Valor:</span>
+                                    <span className="font-medium text-slate-800">
+                                        {modulo.tipo_cobranca === 'Pago' ? `R$ ${modulo.valor_padrao},00` : 'Gratuito'}
+                                    </span>
+                                </div>
                             </Card>
                             
-                            {modulo.tipo_cobranca === 'Pago' && (
-                                <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">
-                                    ⏳ Sua reserva ficará como "Aguardando Aprovação" até o clube confirmar o pagamento.
-                                </div>
-                            )}
-                            
                             <div className="flex gap-2">
-                                <Button variant="secondary" onClick={() => setStep(modulo.tipo_cobranca === 'Pago' ? 'pagamento' : 'horario')}>
-                                    Voltar
-                                </Button>
+                                <Button variant="secondary" onClick={() => setStep(modulo.tipo_cobranca === 'Pago' ? 'pagamento' : 'horario')}>Voltar</Button>
                                 <Button className="flex-1" onClick={handleConfirmar}>
                                     Confirmar Reserva
                                 </Button>
@@ -790,50 +942,544 @@
             );
         };
 
-        // MINHAS RESERVAS
-        const MinhasReservas = ({ reservas, recursos, modulos, currentUser, onCancelar }) => {
-            const minhasReservas = reservas.filter(r => r.id_usuario === currentUser.id);
+        // TELA DE ENTRAR NA FILA
+        const TelaEntrarFila = ({ modulo, recursos, currentUser, filaEspera, onEntrar, onVoltar }) => {
+            const [tipoEspera, setTipoEspera] = useState('qualquer'); // 'qualquer' ou 'especifica'
+            const [selectedRecurso, setSelectedRecurso] = useState(null);
+            const [selectedData, setSelectedData] = useState(formatDate(new Date()));
+            const [selectedHorario, setSelectedHorario] = useState(null);
+            
+            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Ativo');
+            
+            // Gera horários de hora cheia e meia hora para a fila
+            const gerarHorariosFila = () => {
+                const horarios = [];
+                for (let h = 6; h < 22; h++) {
+                    horarios.push(`${String(h).padStart(2, '0')}:00`);
+                    horarios.push(`${String(h).padStart(2, '0')}:30`);
+                }
+                return horarios;
+            };
+            
+            // Verifica se usuário já está na fila para este horário
+            const jaEstaNaFila = filaEspera.some(f => 
+                f.id_usuario === currentUser.id && 
+                f.id_modulo === modulo.id &&
+                f.data === selectedData &&
+                f.horario_desejado === selectedHorario &&
+                f.status === 'Aguardando'
+            );
+            
+            const handleEntrar = () => {
+                const novaEntradaFila = {
+                    id: Date.now(),
+                    id_modulo: modulo.id,
+                    id_recurso: tipoEspera === 'especifica' ? selectedRecurso.id : null,
+                    id_usuario: currentUser.id,
+                    data: selectedData,
+                    horario_desejado: selectedHorario,
+                    created_at: new Date().toISOString(),
+                    status: 'Aguardando',
+                    tipo_entrada: modulo.tipo_fila
+                };
+                onEntrar(novaEntradaFila);
+            };
+            
+            return (
+                <div className="p-4 space-y-4">
+                    <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Voltar
+                    </button>
+                    
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <span className="text-3xl">{modulo.icone}</span>
+                            <span className="absolute -top-1 -right-1 text-lg">⏳</span>
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">Fila de Espera</h2>
+                            <p className="text-sm text-slate-500">{modulo.nome_categoria}</p>
+                        </div>
+                    </div>
+                    
+                    <Card className="p-4 bg-purple-50 border-purple-200">
+                        <p className="text-sm text-purple-700">
+                            {modulo.tipo_fila === 'checkin' 
+                                ? `📍 Check-in presencial - Você precisa estar no clube até ${modulo.antecedencia_fila_minutos} minutos antes do horário.`
+                                : `📅 Agendamento antecipado - Reserve sua posição na fila para o horário desejado.`
+                            }
+                        </p>
+                    </Card>
+                    
+                    {/* Tipo de espera */}
+                    <div className="space-y-3">
+                        <h3 className="font-semibold text-slate-700">O que você prefere?</h3>
+                        
+                        <Card 
+                            className={`p-4 border-2 cursor-pointer transition-all ${tipoEspera === 'qualquer' ? 'border-purple-500 bg-purple-50' : 'border-transparent'}`}
+                            onClick={() => { setTipoEspera('qualquer'); setSelectedRecurso(null); }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipoEspera === 'qualquer' ? 'border-purple-500' : 'border-slate-300'}`}>
+                                    {tipoEspera === 'qualquer' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-800">Qualquer {modulo.nome_categoria === 'Tênis' ? 'quadra' : 'local'}</p>
+                                    <p className="text-sm text-slate-500">Primeira que vagar</p>
+                                </div>
+                            </div>
+                        </Card>
+                        
+                        <Card 
+                            className={`p-4 border-2 cursor-pointer transition-all ${tipoEspera === 'especifica' ? 'border-purple-500 bg-purple-50' : 'border-transparent'}`}
+                            onClick={() => setTipoEspera('especifica')}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipoEspera === 'especifica' ? 'border-purple-500' : 'border-slate-300'}`}>
+                                    {tipoEspera === 'especifica' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-slate-800">{modulo.nome_categoria === 'Tênis' ? 'Quadra' : 'Local'} específica</p>
+                                    <p className="text-sm text-slate-500">Escolher qual prefiro</p>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                    
+                    {/* Seleção de quadra específica */}
+                    {tipoEspera === 'especifica' && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-slate-700">Escolha:</h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {recursosDoModulo.map(recurso => (
+                                    <button
+                                        key={recurso.id}
+                                        onClick={() => setSelectedRecurso(recurso)}
+                                        className={`p-3 rounded-xl text-left transition-all ${
+                                            selectedRecurso?.id === recurso.id 
+                                                ? 'bg-purple-100 border-2 border-purple-500' 
+                                                : 'bg-slate-50 border-2 border-transparent'
+                                        }`}
+                                    >
+                                        <p className="font-medium text-slate-800">{recurso.nome_identificador}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Data */}
+                    {modulo.tipo_fila === 'agendamento' && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium text-slate-700">Data:</h4>
+                            <Input 
+                                type="date"
+                                value={selectedData}
+                                onChange={(e) => setSelectedData(e.target.value)}
+                                min={formatDate(new Date())}
+                            />
+                        </div>
+                    )}
+                    
+                    {/* Horário desejado */}
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-slate-700">Horário desejado:</h4>
+                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                            {gerarHorariosFila().map(horario => (
+                                <button
+                                    key={horario}
+                                    onClick={() => setSelectedHorario(horario)}
+                                    className={`p-2 rounded-xl text-sm font-medium transition-all ${
+                                        selectedHorario === horario
+                                            ? 'bg-purple-500 text-white'
+                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    }`}
+                                >
+                                    {horario}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {jaEstaNaFila && (
+                        <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">
+                            ⚠️ Você já está na fila para este horário!
+                        </div>
+                    )}
+                    
+                    <Button 
+                        variant="purple"
+                        className="w-full"
+                        disabled={!selectedHorario || (tipoEspera === 'especifica' && !selectedRecurso) || jaEstaNaFila}
+                        onClick={handleEntrar}
+                    >
+                        Entrar na Fila de Espera
+                    </Button>
+                </div>
+            );
+        };
+
+        // TELA DE FILA DE ESPERA (VISUALIZAÇÃO)
+        const TelaFilaEspera = ({ 
+            modulos, 
+            recursos, 
+            filaEspera, 
+            currentUser, 
+            usuarios,
+            onCancelarFila, 
+            onAdicionarNaFila,
+            onAtribuirDaFila 
+        }) => {
+            const [showModalAdicionar, setShowModalAdicionar] = useState(false);
+            const [moduloSelecionado, setModuloSelecionado] = useState(null);
+            
+            const isStaff = currentUser.role === 'Admin' || currentUser.role === 'Funcionario';
+            const modulosComFila = modulos.filter(m => m.status_ativo && m.fila_habilitada);
             const hoje = formatDate(new Date());
             
+            // Filtra filas do usuário ou todas se for funcionário
+            const filasVisiveis = isStaff 
+                ? filaEspera.filter(f => f.status === 'Aguardando')
+                : filaEspera.filter(f => f.id_usuario === currentUser.id);
+            
+            const getUsuario = (id) => usuarios.find(u => u.id === id);
             const getRecurso = (id) => recursos.find(r => r.id === id);
-            const getModulo = (idRecurso) => {
-                const recurso = getRecurso(idRecurso);
+            const getModulo = (id) => modulos.find(m => m.id === id);
+            
+            // Agrupa fila por módulo
+            const filasPorModulo = modulosComFila.map(modulo => ({
+                modulo,
+                filas: filasVisiveis.filter(f => f.id_modulo === modulo.id).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            })).filter(g => g.filas.length > 0 || isStaff);
+            
+            return (
+                <div className="p-4 space-y-4 pb-24">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2>
+                            <p className="text-sm text-slate-500">
+                                {isStaff ? 'Gerencie as filas de espera' : 'Suas posições na fila'}
+                            </p>
+                        </div>
+                        
+                        {isStaff && (
+                            <Button variant="purple" size="sm" onClick={() => setShowModalAdicionar(true)}>
+                                + Adicionar
+                            </Button>
+                        )}
+                    </div>
+                    
+                    {filasPorModulo.length === 0 && (
+                        <Card className="p-8 text-center">
+                            <span className="text-4xl mb-4 block">⏳</span>
+                            <p className="text-slate-500">
+                                {isStaff ? 'Nenhuma pessoa na fila no momento' : 'Você não está em nenhuma fila'}
+                            </p>
+                        </Card>
+                    )}
+                    
+                    {filasPorModulo.map(({ modulo, filas }) => (
+                        <Card key={modulo.id} className="p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xl">{modulo.icone}</span>
+                                <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                <Badge variant={modulo.tipo_fila === 'checkin' ? 'info' : 'purple'} size="sm">
+                                    {modulo.tipo_fila === 'checkin' ? 'Check-in' : 'Agendamento'}
+                                </Badge>
+                            </div>
+                            
+                            {filas.length === 0 ? (
+                                <p className="text-sm text-slate-400 text-center py-4">Fila vazia</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {filas.map((fila, index) => {
+                                        const usuario = getUsuario(fila.id_usuario);
+                                        const recurso = fila.id_recurso ? getRecurso(fila.id_recurso) : null;
+                                        
+                                        return (
+                                            <div 
+                                                key={fila.id} 
+                                                className={`p-3 rounded-xl ${
+                                                    fila.id_usuario === currentUser.id ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm">
+                                                            {index + 1}º
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-slate-800">
+                                                                {isStaff ? usuario?.nome : (fila.id_usuario === currentUser.id ? 'Você' : `Posição ${index + 1}`)}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500">
+                                                                {recurso ? recurso.nome_identificador : 'Qualquer'}
+                                                                {' • '}{fila.horario_desejado}
+                                                                {fila.data !== hoje && ` • ${formatDateBR(fila.data)}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-2">
+                                                        <StatusBadge status={fila.status} />
+                                                        
+                                                        {fila.status === 'Aguardando' && (
+                                                            <>
+                                                                {isStaff && (
+                                                                    <Button 
+                                                                        variant="success" 
+                                                                        size="sm"
+                                                                        onClick={() => onAtribuirDaFila(fila)}
+                                                                    >
+                                                                        Atribuir
+                                                                    </Button>
+                                                                )}
+                                                                {(fila.id_usuario === currentUser.id || isStaff) && (
+                                                                    <Button 
+                                                                        variant="danger" 
+                                                                        size="sm"
+                                                                        onClick={() => onCancelarFila(fila.id)}
+                                                                    >
+                                                                        ✕
+                                                                    </Button>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Card>
+                    ))}
+                    
+                    {/* Modal para funcionário adicionar pessoa na fila */}
+                    <Modal isOpen={showModalAdicionar} onClose={() => setShowModalAdicionar(false)} title="Adicionar à Fila">
+                        <ModalAdicionarFila 
+                            modulos={modulosComFila}
+                            recursos={recursos}
+                            usuarios={usuarios.filter(u => u.role === 'Socio')}
+                            onAdicionar={(entrada) => { onAdicionarNaFila(entrada); setShowModalAdicionar(false); }}
+                        />
+                    </Modal>
+                </div>
+            );
+        };
+
+        // Modal para adicionar pessoa na fila (funcionário/admin)
+        const ModalAdicionarFila = ({ modulos, recursos, usuarios, onAdicionar }) => {
+            const [selectedModulo, setSelectedModulo] = useState(null);
+            const [selectedUsuario, setSelectedUsuario] = useState(null);
+            const [tipoEspera, setTipoEspera] = useState('qualquer');
+            const [selectedRecurso, setSelectedRecurso] = useState(null);
+            const [selectedHorario, setSelectedHorario] = useState('08:00');
+            const [selectedData, setSelectedData] = useState(formatDate(new Date()));
+            
+            const recursosDoModulo = selectedModulo 
+                ? recursos.filter(r => r.id_modulo === selectedModulo.id && r.status_operacional === 'Ativo')
+                : [];
+            
+            const gerarHorariosFila = () => {
+                const horarios = [];
+                for (let h = 6; h < 22; h++) {
+                    horarios.push(`${String(h).padStart(2, '0')}:00`);
+                    horarios.push(`${String(h).padStart(2, '0')}:30`);
+                }
+                return horarios;
+            };
+            
+            const handleAdicionar = () => {
+                const novaEntrada = {
+                    id: Date.now(),
+                    id_modulo: selectedModulo.id,
+                    id_recurso: tipoEspera === 'especifica' ? selectedRecurso.id : null,
+                    id_usuario: selectedUsuario.id,
+                    data: selectedData,
+                    horario_desejado: selectedHorario,
+                    created_at: new Date().toISOString(),
+                    status: 'Aguardando',
+                    tipo_entrada: selectedModulo.tipo_fila
+                };
+                onAdicionar(novaEntrada);
+            };
+            
+            return (
+                <div className="space-y-4">
+                    <Select 
+                        label="Módulo"
+                        options={[
+                            { value: '', label: 'Selecione...' },
+                            ...modulos.map(m => ({ value: m.id, label: `${m.icone} ${m.nome_categoria}` }))
+                        ]}
+                        onChange={(e) => setSelectedModulo(modulos.find(m => m.id === parseInt(e.target.value)))}
+                    />
+                    
+                    <Select 
+                        label="Sócio"
+                        options={[
+                            { value: '', label: 'Selecione...' },
+                            ...usuarios.map(u => ({ value: u.id, label: `${u.nome} (${u.matricula})` }))
+                        ]}
+                        onChange={(e) => setSelectedUsuario(usuarios.find(u => u.id === parseInt(e.target.value)))}
+                    />
+                    
+                    {selectedModulo && (
+                        <>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Tipo de espera:</label>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant={tipoEspera === 'qualquer' ? 'purple' : 'secondary'} 
+                                        size="sm"
+                                        onClick={() => { setTipoEspera('qualquer'); setSelectedRecurso(null); }}
+                                    >
+                                        Qualquer
+                                    </Button>
+                                    <Button 
+                                        variant={tipoEspera === 'especifica' ? 'purple' : 'secondary'} 
+                                        size="sm"
+                                        onClick={() => setTipoEspera('especifica')}
+                                    >
+                                        Específico
+                                    </Button>
+                                </div>
+                            </div>
+                            
+                            {tipoEspera === 'especifica' && (
+                                <Select 
+                                    label="Local"
+                                    options={[
+                                        { value: '', label: 'Selecione...' },
+                                        ...recursosDoModulo.map(r => ({ value: r.id, label: r.nome_identificador }))
+                                    ]}
+                                    onChange={(e) => setSelectedRecurso(recursosDoModulo.find(r => r.id === parseInt(e.target.value)))}
+                                />
+                            )}
+                            
+                            {selectedModulo.tipo_fila === 'agendamento' && (
+                                <Input 
+                                    type="date"
+                                    label="Data"
+                                    value={selectedData}
+                                    onChange={(e) => setSelectedData(e.target.value)}
+                                    min={formatDate(new Date())}
+                                />
+                            )}
+                            
+                            <Select 
+                                label="Horário desejado"
+                                options={gerarHorariosFila().map(h => ({ value: h, label: h }))}
+                                value={selectedHorario}
+                                onChange={(e) => setSelectedHorario(e.target.value)}
+                            />
+                        </>
+                    )}
+                    
+                    <Button 
+                        variant="purple"
+                        className="w-full"
+                        disabled={!selectedModulo || !selectedUsuario || !selectedHorario || (tipoEspera === 'especifica' && !selectedRecurso)}
+                        onClick={handleAdicionar}
+                    >
+                        Adicionar à Fila
+                    </Button>
+                </div>
+            );
+        };
+
+        // MINHAS RESERVAS
+        const MinhasReservas = ({ reservas, recursos, modulos, currentUser, onCancelar }) => {
+            const [tab, setTab] = useState('proximas');
+            const hoje = formatDate(new Date());
+            
+            const minhasReservas = reservas.filter(r => r.id_usuario === currentUser.id);
+            const proximas = minhasReservas.filter(r => r.data >= hoje && r.status !== 'Cancelada' && r.status !== 'No-Show');
+            const historico = minhasReservas.filter(r => r.data < hoje || r.status === 'Cancelada' || r.status === 'No-Show');
+            
+            const getRecurso = (id) => recursos.find(r => r.id === id);
+            const getModulo = (recursoId) => {
+                const recurso = getRecurso(recursoId);
                 return modulos.find(m => m.id === recurso?.id_modulo);
             };
             
-            const reservasFuturas = minhasReservas.filter(r => r.data >= hoje && r.status !== 'Cancelada');
-            const reservasPassadas = minhasReservas.filter(r => r.data < hoje || r.status === 'Finalizada');
+            const podeCancelar = (reserva) => {
+                const modulo = getModulo(reserva.id_recurso);
+                if (!modulo) return false;
+                
+                const now = new Date();
+                const reservaDate = new Date(reserva.data + 'T' + reserva.hora_inicio);
+                const diffHours = (reservaDate - now) / (1000 * 60 * 60);
+                
+                return diffHours >= modulo.janela_cancelamento && reserva.status !== 'Cancelada';
+            };
+            
+            const reservasExibidas = tab === 'proximas' ? proximas : historico;
             
             return (
-                <div className="p-4 space-y-6">
+                <div className="p-4 space-y-4 pb-24">
                     <h2 className="text-xl font-bold text-slate-800">Minhas Reservas</h2>
                     
-                    {reservasFuturas.length > 0 && (
+                    <TabBar 
+                        tabs={[
+                            { id: 'proximas', label: `Próximas (${proximas.length})` },
+                            { id: 'historico', label: `Histórico (${historico.length})` },
+                        ]}
+                        active={tab}
+                        onChange={setTab}
+                    />
+                    
+                    {reservasExibidas.length === 0 ? (
+                        <Card className="p-8 text-center">
+                            <p className="text-slate-500">
+                                {tab === 'proximas' ? 'Nenhuma reserva agendada' : 'Nenhuma reserva no histórico'}
+                            </p>
+                        </Card>
+                    ) : (
                         <div className="space-y-3">
-                            <h3 className="font-semibold text-slate-600">Próximas</h3>
-                            {reservasFuturas.map(reserva => {
+                            {reservasExibidas.map(reserva => {
                                 const recurso = getRecurso(reserva.id_recurso);
                                 const modulo = getModulo(reserva.id_recurso);
+                                
                                 return (
                                     <Card key={reserva.id} className="p-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex gap-3">
-                                                <span className="text-2xl">{modulo?.icone}</span>
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xl">{modulo?.icone}</span>
                                                 <div>
                                                     <h4 className="font-semibold text-slate-800">{recurso?.nome_identificador}</h4>
-                                                    <p className="text-sm text-slate-500">
-                                                        {formatDateBR(reserva.data)} • {reserva.hora_inicio} - {reserva.hora_fim}
-                                                    </p>
+                                                    <p className="text-sm text-slate-500">{modulo?.nome_categoria}</p>
                                                 </div>
                                             </div>
                                             <StatusBadge status={reserva.status} />
                                         </div>
                                         
-                                        {reserva.status !== 'Cancelada' && reserva.status !== 'Aguardando Aprovação' && (
+                                        <div className="bg-slate-50 rounded-xl p-3 mb-3">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Data:</span>
+                                                <span className="font-medium">{formatDateBR(reserva.data)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-slate-500">Horário:</span>
+                                                <span className="font-medium">{reserva.hora_inicio} - {reserva.hora_fim}</span>
+                                            </div>
+                                            {reserva.valor > 0 && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-500">Valor:</span>
+                                                    <span className="font-medium">R$ {reserva.valor},00</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {tab === 'proximas' && podeCancelar(reserva) && (
                                             <Button 
-                                                variant="ghost" 
+                                                variant="danger" 
                                                 size="sm" 
-                                                className="w-full mt-3 text-red-500 hover:bg-red-50"
+                                                className="w-full"
                                                 onClick={() => onCancelar(reserva.id)}
                                             >
                                                 Cancelar Reserva
@@ -844,62 +1490,68 @@
                             })}
                         </div>
                     )}
-                    
-                    {reservasPassadas.length > 0 && (
-                        <div className="space-y-3">
-                            <h3 className="font-semibold text-slate-600">Histórico</h3>
-                            {reservasPassadas.slice(0, 5).map(reserva => {
-                                const recurso = getRecurso(reserva.id_recurso);
-                                const modulo = getModulo(reserva.id_recurso);
-                                return (
-                                    <Card key={reserva.id} className="p-4 opacity-60">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xl">{modulo?.icone}</span>
-                                            <div className="flex-1">
-                                                <h4 className="font-medium text-slate-700">{recurso?.nome_identificador}</h4>
-                                                <p className="text-sm text-slate-400">{formatDateBR(reserva.data)}</p>
-                                            </div>
-                                            <StatusBadge status={reserva.status} />
-                                        </div>
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    )}
-                    
-                    {minhasReservas.length === 0 && (
-                        <Card className="p-8 text-center">
-                            <div className="text-4xl mb-3">📅</div>
-                            <p className="text-slate-500">Você ainda não tem reservas.</p>
-                        </Card>
-                    )}
                 </div>
             );
         };
 
         // LOUSA DIGITAL (FUNCIONÁRIO/ADMIN)
-        const LousaDigital = ({ modulos, recursos, reservas, usuarios, onConfirmarPresenca, onRegistrarNoShow, onAprovarPagamento }) => {
+        const LousaDigital = ({ 
+            reservas, 
+            recursos, 
+            modulos, 
+            usuarios,
+            filaEspera,
+            onConfirmarPresenca, 
+            onRegistrarNoShow,
+            onAprovarPagamento,
+            onAtribuirDaFila
+        }) => {
             const [moduloSelecionado, setModuloSelecionado] = useState(null);
-            const hoje = formatDate(new Date());
+            const [showModalFila, setShowModalFila] = useState(false);
+            const [recursoParaFila, setRecursoParaFila] = useState(null);
             
+            const hoje = formatDate(new Date());
             const modulosAtivos = modulos.filter(m => m.status_ativo);
             
-            const getReservasDoRecurso = (idRecurso) => {
+            const getReservasDoRecurso = (recursoId) => {
                 return reservas.filter(r => 
-                    r.id_recurso === idRecurso && 
+                    r.id_recurso === recursoId && 
                     r.data === hoje &&
-                    ['Pendente', 'Confirmada', 'Aguardando Aprovação'].includes(r.status)
-                );
+                    r.status !== 'Cancelada'
+                ).sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
             };
             
             const getUsuario = (id) => usuarios.find(u => u.id === id);
             
-            const recursosExibidos = moduloSelecionado
+            const recursosExibidos = moduloSelecionado 
                 ? recursos.filter(r => r.id_modulo === moduloSelecionado.id)
                 : recursos.filter(r => modulosAtivos.some(m => m.id === r.id_modulo));
             
+            // Fila de espera do dia
+            const filaHoje = filaEspera.filter(f => f.data === hoje && f.status === 'Aguardando');
+            
+            // Obtém próximo da fila para um recurso específico ou qualquer recurso do módulo
+            const getProximosDaFila = (recurso) => {
+                const modulo = modulos.find(m => m.id === recurso.id_modulo);
+                if (!modulo?.fila_habilitada) return [];
+                
+                return filaHoje
+                    .filter(f => f.id_modulo === recurso.id_modulo && (f.id_recurso === null || f.id_recurso === recurso.id))
+                    .sort((a, b) => {
+                        // Prioridade: 1º quem pediu recurso específico, 2º ordem de chegada
+                        if (a.id_recurso === recurso.id && b.id_recurso !== recurso.id) return -1;
+                        if (b.id_recurso === recurso.id && a.id_recurso !== recurso.id) return 1;
+                        return new Date(a.created_at) - new Date(b.created_at);
+                    });
+            };
+            
+            const handleAbrirFila = (recurso) => {
+                setRecursoParaFila(recurso);
+                setShowModalFila(true);
+            };
+            
             return (
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 pb-24">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold text-slate-800">Lousa Digital</h2>
                         <Badge variant="info">{formatDateBR(hoje)}</Badge>
@@ -926,12 +1578,26 @@
                         ))}
                     </div>
                     
+                    {/* Resumo da fila */}
+                    {filaHoje.length > 0 && (
+                        <Card className="p-3 bg-purple-50 border-purple-200">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">⏳</span>
+                                    <span className="font-medium text-purple-800">{filaHoje.length} na fila de espera</span>
+                                </div>
+                                <Badge variant="purple">{filaHoje.length}</Badge>
+                            </div>
+                        </Card>
+                    )}
+                    
                     {/* Grid de Recursos */}
                     <div className="space-y-4">
                         {recursosExibidos.map(recurso => {
                             const modulo = modulos.find(m => m.id === recurso.id_modulo);
                             const reservasRecurso = getReservasDoRecurso(recurso.id);
                             const reservaAtual = reservasRecurso[0];
+                            const proximosFila = getProximosDaFila(recurso);
                             
                             return (
                                 <Card key={recurso.id} className={`p-4 ${recurso.status_operacional === 'Manutencao' ? 'opacity-50' : ''}`}>
@@ -940,14 +1606,27 @@
                                             <span className="text-xl">{modulo?.icone}</span>
                                             <div>
                                                 <h3 className="font-semibold text-slate-800">{recurso.nome_identificador}</h3>
-                                                <Badge 
-                                                    variant={recurso.status_operacional === 'Ativo' ? 'success' : 'warning'}
-                                                    size="sm"
-                                                >
-                                                    {recurso.status_operacional}
-                                                </Badge>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge 
+                                                        variant={recurso.status_operacional === 'Ativo' ? 'success' : 'warning'}
+                                                        size="sm"
+                                                    >
+                                                        {recurso.status_operacional}
+                                                    </Badge>
+                                                    {proximosFila.length > 0 && (
+                                                        <Badge variant="purple" size="sm">
+                                                            {proximosFila.length} na fila
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
+                                        
+                                        {modulo?.fila_habilitada && (
+                                            <Button variant="ghost" size="sm" onClick={() => handleAbrirFila(recurso)}>
+                                                ⏳
+                                            </Button>
+                                        )}
                                     </div>
                                     
                                     {reservaAtual ? (
@@ -1013,12 +1692,67 @@
                                         <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-xl">
                                             <p className="text-lg">✓</p>
                                             <p className="text-sm">Livre</p>
+                                            
+                                            {proximosFila.length > 0 && (
+                                                <Button 
+                                                    variant="purple" 
+                                                    size="sm" 
+                                                    className="mt-2"
+                                                    onClick={() => handleAbrirFila(recurso)}
+                                                >
+                                                    Atribuir da Fila
+                                                </Button>
+                                            )}
                                         </div>
                                     )}
                                 </Card>
                             );
                         })}
                     </div>
+                    
+                    {/* Modal de Fila do Recurso */}
+                    <Modal 
+                        isOpen={showModalFila} 
+                        onClose={() => setShowModalFila(false)} 
+                        title={`Fila - ${recursoParaFila?.nome_identificador || ''}`}
+                    >
+                        {recursoParaFila && (
+                            <div className="space-y-3">
+                                {getProximosDaFila(recursoParaFila).length === 0 ? (
+                                    <p className="text-center text-slate-500 py-4">Nenhuma pessoa na fila</p>
+                                ) : (
+                                    getProximosDaFila(recursoParaFila).map((fila, index) => {
+                                        const usuario = getUsuario(fila.id_usuario);
+                                        return (
+                                            <div key={fila.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm">
+                                                        {index + 1}º
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-slate-800">{usuario?.nome}</p>
+                                                        <p className="text-xs text-slate-500">
+                                                            {fila.id_recurso ? 'Específico' : 'Qualquer'} • {fila.horario_desejado}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button 
+                                                    variant="success" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        onAtribuirDaFila(fila, recursoParaFila);
+                                                        setShowModalFila(false);
+                                                    }}
+                                                >
+                                                    Atribuir
+                                                </Button>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                    </Modal>
                 </div>
             );
         };
@@ -1060,12 +1794,13 @@
             }
             
             return (
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-4 pb-24">
                     <h2 className="text-xl font-bold text-slate-800">Configurações</h2>
                     
                     <TabBar 
                         tabs={[
                             { id: 'modulos', label: 'Módulos' },
+                            { id: 'fila', label: 'Fila' },
                             { id: 'clube', label: 'Clube' },
                             { id: 'usuarios', label: 'Usuários' },
                         ]}
@@ -1085,9 +1820,14 @@
                                             <span className="text-2xl">{modulo.icone}</span>
                                             <div>
                                                 <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
-                                                <Badge variant={modulo.tipo_cobranca === 'Pago' ? 'warning' : 'default'} size="sm">
-                                                    {modulo.tipo_cobranca}
-                                                </Badge>
+                                                <div className="flex gap-1">
+                                                    <Badge variant={modulo.tipo_cobranca === 'Pago' ? 'warning' : 'default'} size="sm">
+                                                        {modulo.tipo_cobranca}
+                                                    </Badge>
+                                                    {modulo.fila_habilitada && (
+                                                        <Badge variant="purple" size="sm">Fila</Badge>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <Toggle 
@@ -1100,10 +1840,71 @@
                                         variant="ghost" 
                                         size="sm" 
                                         className="w-full"
-                                        onClick={() => setEditingModulo({...modulo})}
+                                        onClick={() => setEditingModulo(modulo)}
                                     >
-                                        Editar Regras
+                                        ⚙️ Editar Regras
                                     </Button>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* TAB: FILA */}
+                    {activeTab === 'fila' && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-500">Configure a fila de espera por módulo.</p>
+                            
+                            {modulos.filter(m => m.tipo_cobranca === 'Gratuito').map(modulo => (
+                                <Card key={modulo.id} className="p-4">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl">{modulo.icone}</span>
+                                            <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                        </div>
+                                        <Toggle 
+                                            checked={modulo.fila_habilitada}
+                                            onChange={(checked) => onUpdateModulo(modulo.id, { fila_habilitada: checked })}
+                                        />
+                                    </div>
+                                    
+                                    {modulo.fila_habilitada && (
+                                        <div className="space-y-3 pt-3 border-t border-slate-100">
+                                            <div>
+                                                <label className="text-sm font-medium text-slate-700 mb-2 block">Tipo de Fila:</label>
+                                                <div className="flex gap-2">
+                                                    <Button 
+                                                        variant={modulo.tipo_fila === 'checkin' ? 'primary' : 'secondary'} 
+                                                        size="sm"
+                                                        onClick={() => onUpdateModulo(modulo.id, { tipo_fila: 'checkin' })}
+                                                    >
+                                                        📍 Check-in
+                                                    </Button>
+                                                    <Button 
+                                                        variant={modulo.tipo_fila === 'agendamento' ? 'primary' : 'secondary'} 
+                                                        size="sm"
+                                                        onClick={() => onUpdateModulo(modulo.id, { tipo_fila: 'agendamento' })}
+                                                    >
+                                                        📅 Agendamento
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                            
+                                            <Input 
+                                                type="number"
+                                                label="Antecedência mínima (minutos)"
+                                                value={modulo.antecedencia_fila_minutos}
+                                                onChange={(e) => onUpdateModulo(modulo.id, { antecedencia_fila_minutos: parseInt(e.target.value) || 0 })}
+                                                min="0"
+                                            />
+                                            
+                                            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg">
+                                                {modulo.tipo_fila === 'checkin' 
+                                                    ? `Sócio deve fazer check-in até ${modulo.antecedencia_fila_minutos} min antes do horário desejado.`
+                                                    : `Sócio pode agendar posição na fila com até ${modulo.antecedencia_fila_minutos} min de antecedência.`
+                                                }
+                                            </div>
+                                        </div>
+                                    )}
                                 </Card>
                             ))}
                         </div>
@@ -1125,23 +1926,19 @@
                                     onChange={(e) => onUpdateConfig({ pix_chave: e.target.value })}
                                 />
                                 
-                                <div className="border-t pt-4">
-                                    <h4 className="font-semibold text-slate-700 mb-3">Regras de Punição</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Input 
-                                            label="Limite de No-Shows"
-                                            type="number"
-                                            value={config.punicao_noshow_limite}
-                                            onChange={(e) => onUpdateConfig({ punicao_noshow_limite: Number(e.target.value) })}
-                                        />
-                                        <Input 
-                                            label="Dias de Bloqueio"
-                                            type="number"
-                                            value={config.punicao_dias_bloqueio}
-                                            onChange={(e) => onUpdateConfig({ punicao_dias_bloqueio: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                </div>
+                                <Input 
+                                    type="number"
+                                    label="Limite de No-Shows"
+                                    value={config.punicao_noshow_limite}
+                                    onChange={(e) => onUpdateConfig({ punicao_noshow_limite: parseInt(e.target.value) || 3 })}
+                                />
+                                
+                                <Input 
+                                    type="number"
+                                    label="Dias de Bloqueio (punição)"
+                                    value={config.punicao_dias_bloqueio}
+                                    onChange={(e) => onUpdateConfig({ punicao_dias_bloqueio: parseInt(e.target.value) || 7 })}
+                                />
                             </Card>
                         </div>
                     )}
@@ -1149,23 +1946,20 @@
                     {/* TAB: USUÁRIOS */}
                     {activeTab === 'usuarios' && (
                         <div className="space-y-3">
-                            {usuarios.map(usuario => (
-                                <Card key={usuario.id} className="p-4">
+                            {usuarios.map(user => (
+                                <Card key={user.id} className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h4 className="font-semibold text-slate-800">{usuario.nome}</h4>
-                                            <p className="text-sm text-slate-500">Matrícula: {usuario.matricula}</p>
+                                            <h4 className="font-semibold text-slate-800">{user.nome}</h4>
+                                            <p className="text-sm text-slate-500">{user.matricula}</p>
                                         </div>
                                         <div className="text-right">
-                                            <Badge variant={
-                                                usuario.role === 'Admin' ? 'purple' :
-                                                usuario.role === 'Funcionario' ? 'info' : 'success'
-                                            }>
-                                                {usuario.role}
+                                            <Badge variant={user.role === 'Admin' ? 'purple' : user.role === 'Funcionario' ? 'info' : 'success'}>
+                                                {user.role}
                                             </Badge>
-                                            {usuario.contador_noshow > 0 && (
-                                                <p className="text-xs text-red-500 mt-1">
-                                                    No-shows: {usuario.contador_noshow}
+                                            {user.role === 'Socio' && (
+                                                <p className="text-xs text-slate-400 mt-1">
+                                                    No-Shows: {user.contador_noshow}
                                                 </p>
                                             )}
                                         </div>
@@ -1175,68 +1969,72 @@
                         </div>
                     )}
                     
-                    {/* MODAL: EDITAR MÓDULO */}
+                    {/* Modal de Edição de Módulo */}
                     <Modal 
-                        isOpen={!!editingModulo}
+                        isOpen={!!editingModulo} 
                         onClose={() => setEditingModulo(null)}
-                        title={`Configurar ${editingModulo?.nome_categoria}`}
+                        title={`Editar ${editingModulo?.nome_categoria}`}
                     >
                         {editingModulo && (
                             <div className="space-y-4">
                                 <Select 
                                     label="Tipo de Cobrança"
-                                    value={editingModulo.tipo_cobranca}
-                                    onChange={(e) => setEditingModulo({ ...editingModulo, tipo_cobranca: e.target.value })}
                                     options={[
                                         { value: 'Gratuito', label: 'Gratuito' },
                                         { value: 'Pago', label: 'Pago' },
                                     ]}
+                                    value={editingModulo.tipo_cobranca}
+                                    onChange={(e) => setEditingModulo({...editingModulo, tipo_cobranca: e.target.value})}
                                 />
                                 
                                 {editingModulo.tipo_cobranca === 'Pago' && (
                                     <Input 
-                                        label="Valor Padrão (R$)"
                                         type="number"
+                                        label="Valor (R$)"
                                         value={editingModulo.valor_padrao}
-                                        onChange={(e) => setEditingModulo({ ...editingModulo, valor_padrao: Number(e.target.value) })}
+                                        onChange={(e) => setEditingModulo({...editingModulo, valor_padrao: parseFloat(e.target.value) || 0})}
                                     />
                                 )}
                                 
-                                <Input 
-                                    label="Tempo de Uso (minutos)"
-                                    type="number"
-                                    value={typeof editingModulo.unidade_tempo === 'number' ? editingModulo.unidade_tempo : 60}
-                                    onChange={(e) => setEditingModulo({ ...editingModulo, unidade_tempo: Number(e.target.value) })}
+                                <Select 
+                                    label="Tempo de Uso"
+                                    options={[
+                                        { value: '30', label: '30 minutos' },
+                                        { value: '60', label: '1 hora' },
+                                        { value: '90', label: '1h30' },
+                                        { value: '120', label: '2 horas' },
+                                        { value: 'Diária', label: 'Diária' },
+                                    ]}
+                                    value={String(editingModulo.unidade_tempo)}
+                                    onChange={(e) => setEditingModulo({
+                                        ...editingModulo, 
+                                        unidade_tempo: e.target.value === 'Diária' ? 'Diária' : parseInt(e.target.value)
+                                    })}
                                 />
                                 
                                 <Input 
+                                    type="number"
                                     label="Antecedência Máxima (horas)"
-                                    type="number"
                                     value={editingModulo.antecedencia_maxima}
-                                    onChange={(e) => setEditingModulo({ ...editingModulo, antecedencia_maxima: Number(e.target.value) })}
+                                    onChange={(e) => setEditingModulo({...editingModulo, antecedencia_maxima: parseInt(e.target.value) || 24})}
                                 />
                                 
                                 <Input 
-                                    label="Janela de Cancelamento (horas)"
                                     type="number"
+                                    label="Janela de Cancelamento (horas)"
                                     value={editingModulo.janela_cancelamento}
-                                    onChange={(e) => setEditingModulo({ ...editingModulo, janela_cancelamento: Number(e.target.value) })}
+                                    onChange={(e) => setEditingModulo({...editingModulo, janela_cancelamento: parseInt(e.target.value) || 2})}
                                 />
                                 
-                                <div className="flex gap-2 pt-4">
-                                    <Button variant="secondary" onClick={() => setEditingModulo(null)}>
-                                        Cancelar
-                                    </Button>
-                                    <Button 
-                                        className="flex-1"
-                                        onClick={() => {
-                                            onUpdateModulo(editingModulo.id, editingModulo);
-                                            setEditingModulo(null);
-                                        }}
-                                    >
-                                        Salvar
-                                    </Button>
-                                </div>
+                                <Button 
+                                    className="w-full"
+                                    onClick={() => {
+                                        onUpdateModulo(editingModulo.id, editingModulo);
+                                        setEditingModulo(null);
+                                    }}
+                                >
+                                    Salvar Alterações
+                                </Button>
                             </div>
                         )}
                     </Modal>
@@ -1247,94 +2045,30 @@
         // ============================================
         // APP PRINCIPAL
         // ============================================
-        const ClubeGestor360 = () => {
-            // Estados globais
-            const [config, setConfig] = useState(initialConfigGlobal);
-            const [modulos, setModulos] = useState(initialModulos);
-            const [recursos, setRecursos] = useState(initialRecursos);
-            const [reservas, setReservas] = useState(generateInitialReservas);
-            const [usuarios, setUsuarios] = useState(initialUsuarios);
-            
-            // Estados de UI
+        const App = () => {
+            // Estados
             const [currentUser, setCurrentUser] = useState(null);
             const [currentView, setCurrentView] = useState('home');
             const [selectedModulo, setSelectedModulo] = useState(null);
+            const [showFilaModal, setShowFilaModal] = useState(false);
+            const [moduloParaFila, setModuloParaFila] = useState(null);
+            
+            // Dados
+            const [config, setConfig] = useState(initialConfigGlobal);
+            const [modulos, setModulos] = useState(initialModulos);
+            const [recursos, setRecursos] = useState(initialRecursos);
+            const [usuarios, setUsuarios] = useState(initialUsuarios);
+            const [reservas, setReservas] = useState(generateInitialReservas);
+            const [filaEspera, setFilaEspera] = useState(generateInitialFilaEspera);
+            
+            // Notificações
             const [notification, setNotification] = useState(null);
             
-            // Mostrar notificação
-            const showNotification = useCallback((message, type = 'success') => {
+            const showNotification = (message, type = 'success') => {
                 setNotification({ message, type });
-                setTimeout(() => setNotification(null), 3000);
-            }, []);
-            
-            // Handlers de configuração
-            const handleUpdateConfig = (updates) => {
-                setConfig(prev => ({ ...prev, ...updates }));
-                showNotification('Configurações atualizadas!');
             };
             
-            const handleUpdateModulo = (id, updates) => {
-                setModulos(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-                showNotification('Módulo atualizado!');
-            };
-            
-            // Handlers de reserva
-            const handleNovaReserva = (reserva) => {
-                setReservas(prev => [...prev, reserva]);
-                setSelectedModulo(null);
-                setCurrentView('reservas');
-                showNotification('Reserva criada com sucesso!');
-            };
-            
-            const handleCancelarReserva = (id) => {
-                setReservas(prev => prev.map(r => 
-                    r.id === id ? { ...r, status: 'Cancelada' } : r
-                ));
-                showNotification('Reserva cancelada.');
-            };
-            
-            const handleConfirmarPresenca = (id) => {
-                setReservas(prev => prev.map(r => 
-                    r.id === id ? { ...r, status: 'Confirmada' } : r
-                ));
-                showNotification('Presença confirmada!', 'success');
-            };
-            
-            const handleRegistrarNoShow = (idReserva) => {
-                const reserva = reservas.find(r => r.id === idReserva);
-                if (!reserva) return;
-                
-                setReservas(prev => prev.map(r => 
-                    r.id === idReserva ? { ...r, status: 'No-Show' } : r
-                ));
-                
-                setUsuarios(prev => prev.map(u => {
-                    if (u.id === reserva.id_usuario) {
-                        const novoContador = u.contador_noshow + 1;
-                        if (novoContador >= config.punicao_noshow_limite) {
-                            const bloqueadoAte = addDays(new Date(), config.punicao_dias_bloqueio);
-                            return { 
-                                ...u, 
-                                contador_noshow: novoContador, 
-                                bloqueado_ate: formatDate(bloqueadoAte) 
-                            };
-                        }
-                        return { ...u, contador_noshow: novoContador };
-                    }
-                    return u;
-                }));
-                
-                showNotification('No-Show registrado!', 'warning');
-            };
-            
-            const handleAprovarPagamento = (id) => {
-                setReservas(prev => prev.map(r => 
-                    r.id === id ? { ...r, status: 'Confirmada' } : r
-                ));
-                showNotification('Pagamento aprovado!', 'success');
-            };
-            
-            // Login
+            // Handlers
             const handleLogin = (user) => {
                 setCurrentUser(user);
                 setCurrentView('home');
@@ -1346,102 +2080,240 @@
                 setSelectedModulo(null);
             };
             
-            // Render login se não logado
+            const handleSelectModulo = (modulo) => {
+                setSelectedModulo(modulo);
+            };
+            
+            const handleVoltar = () => {
+                setSelectedModulo(null);
+                setModuloParaFila(null);
+            };
+            
+            const handleReservar = (novaReserva) => {
+                setReservas([...reservas, novaReserva]);
+                setSelectedModulo(null);
+                showNotification('Reserva realizada com sucesso!');
+                setCurrentView('reservas');
+            };
+            
+            const handleCancelarReserva = (reservaId) => {
+                setReservas(reservas.map(r => 
+                    r.id === reservaId ? {...r, status: 'Cancelada'} : r
+                ));
+                showNotification('Reserva cancelada.', 'warning');
+            };
+            
+            const handleConfirmarPresenca = (reservaId) => {
+                setReservas(reservas.map(r => 
+                    r.id === reservaId ? {...r, status: 'Confirmada'} : r
+                ));
+                showNotification('Presença confirmada!');
+            };
+            
+            const handleRegistrarNoShow = (reservaId) => {
+                const reserva = reservas.find(r => r.id === reservaId);
+                if (reserva) {
+                    setReservas(reservas.map(r => 
+                        r.id === reservaId ? {...r, status: 'No-Show'} : r
+                    ));
+                    setUsuarios(usuarios.map(u => 
+                        u.id === reserva.id_usuario ? {...u, contador_noshow: u.contador_noshow + 1} : u
+                    ));
+                    showNotification('No-Show registrado.', 'warning');
+                }
+            };
+            
+            const handleAprovarPagamento = (reservaId) => {
+                setReservas(reservas.map(r => 
+                    r.id === reservaId ? {...r, status: 'Confirmada'} : r
+                ));
+                showNotification('Pagamento aprovado!');
+            };
+            
+            const handleUpdateConfig = (updates) => {
+                setConfig({...config, ...updates});
+                showNotification('Configurações atualizadas!');
+            };
+            
+            const handleUpdateModulo = (moduloId, updates) => {
+                setModulos(modulos.map(m => 
+                    m.id === moduloId ? {...m, ...updates} : m
+                ));
+            };
+            
+            // Handlers de Fila
+            const handleEntrarFila = (modulo) => {
+                setModuloParaFila(modulo);
+            };
+            
+            const handleConfirmarEntradaFila = (novaEntrada) => {
+                setFilaEspera([...filaEspera, novaEntrada]);
+                setModuloParaFila(null);
+                showNotification('Você entrou na fila de espera!');
+                setCurrentView('fila');
+            };
+            
+            const handleCancelarFila = (filaId) => {
+                setFilaEspera(filaEspera.map(f => 
+                    f.id === filaId ? {...f, status: 'Cancelado'} : f
+                ));
+                showNotification('Saiu da fila de espera.', 'warning');
+            };
+            
+            const handleAdicionarNaFila = (novaEntrada) => {
+                setFilaEspera([...filaEspera, novaEntrada]);
+                showNotification('Pessoa adicionada à fila!');
+            };
+            
+            const handleAtribuirDaFila = (fila, recurso) => {
+                const modulo = modulos.find(m => m.id === fila.id_modulo);
+                const recursoAtribuido = recurso || recursos.find(r => r.id === fila.id_recurso) || 
+                    recursos.find(r => r.id_modulo === fila.id_modulo && r.status_operacional === 'Ativo');
+                
+                if (!recursoAtribuido) {
+                    showNotification('Nenhum recurso disponível!', 'error');
+                    return;
+                }
+                
+                // Calcula hora fim
+                const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
+                const [h, m] = fila.horario_desejado.split(':').map(Number);
+                const fimMinutos = h * 60 + m + duracao;
+                const horaFim = `${String(Math.floor(fimMinutos / 60)).padStart(2, '0')}:${String(fimMinutos % 60).padStart(2, '0')}`;
+                
+                // Cria reserva
+                const novaReserva = {
+                    id: Date.now(),
+                    id_recurso: recursoAtribuido.id,
+                    id_usuario: fila.id_usuario,
+                    data: fila.data,
+                    hora_inicio: fila.horario_desejado,
+                    hora_fim: horaFim,
+                    status: 'Pendente',
+                    url_comprovante_pix: null,
+                    valor: 0
+                };
+                
+                setReservas([...reservas, novaReserva]);
+                setFilaEspera(filaEspera.map(f => 
+                    f.id === fila.id ? {...f, status: 'Atendido'} : f
+                ));
+                
+                showNotification(`Reserva criada para ${usuarios.find(u => u.id === fila.id_usuario)?.nome}!`);
+            };
+            
+            // Renderização
             if (!currentUser) {
-                return <LoginScreen usuarios={usuarios} onLogin={handleLogin} />;
+                return <TelaLogin usuarios={usuarios} onLogin={handleLogin} />;
             }
             
-            // Render principal
             return (
-                <ClubeContext.Provider value={{ config, modulos, recursos, reservas, usuarios }}>
-                    <div className="min-h-screen bg-slate-50 pb-20">
-                        <Header 
-                            currentUser={currentUser}
-                            onLogout={handleLogout}
-                        />
-                        
-                        {/* NOTIFICAÇÃO */}
-                        {notification && (
-                            <div className={`fixed top-20 left-4 right-4 z-50 p-4 rounded-xl shadow-lg animate-slide-down ${
-                                notification.type === 'success' ? 'bg-emerald-500 text-white' :
-                                notification.type === 'warning' ? 'bg-amber-500 text-white' :
-                                'bg-red-500 text-white'
-                            }`}>
-                                {notification.message}
-                            </div>
+                <div className="min-h-screen bg-slate-50">
+                    <Header currentUser={currentUser} onLogout={handleLogout} />
+                    
+                    <main className="max-w-7xl mx-auto pb-20">
+                        {/* Home */}
+                        {currentView === 'home' && !selectedModulo && !moduloParaFila && (
+                            <HomeSocio modulos={modulos} onSelectModulo={handleSelectModulo} />
                         )}
                         
-                        {/* CONTEÚDO PRINCIPAL */}
-                        <main>
-                            {/* VIEW: HOME */}
-                            {currentView === 'home' && !selectedModulo && (
-                                <HomeSocio 
-                                    modulos={modulos}
-                                    onSelectModulo={setSelectedModulo}
-                                />
-                            )}
-                            
-                            {/* VIEW: RESERVA DE RECURSO */}
-                            {currentView === 'home' && selectedModulo && (
-                                <ReservaRecurso 
-                                    modulo={selectedModulo}
-                                    recursos={recursos}
-                                    reservas={reservas}
-                                    currentUser={currentUser}
-                                    onReservar={handleNovaReserva}
-                                    onVoltar={() => setSelectedModulo(null)}
-                                />
-                            )}
-                            
-                            {/* VIEW: MINHAS RESERVAS */}
-                            {currentView === 'reservas' && (
-                                <MinhasReservas 
-                                    reservas={reservas}
-                                    recursos={recursos}
-                                    modulos={modulos}
-                                    currentUser={currentUser}
-                                    onCancelar={handleCancelarReserva}
-                                />
-                            )}
-                            
-                            {/* VIEW: LOUSA DIGITAL */}
-                            {currentView === 'lousa' && (currentUser.role === 'Admin' || currentUser.role === 'Funcionario') && (
-                                <LousaDigital 
-                                    modulos={modulos}
-                                    recursos={recursos}
-                                    reservas={reservas}
-                                    usuarios={usuarios}
-                                    onConfirmarPresenca={handleConfirmarPresenca}
-                                    onRegistrarNoShow={handleRegistrarNoShow}
-                                    onAprovarPagamento={handleAprovarPagamento}
-                                />
-                            )}
-                            
-                            {/* VIEW: CONFIGURAÇÕES */}
-                            {currentView === 'config' && currentUser.role === 'Admin' && (
-                                <PainelConfig 
-                                    config={config}
-                                    modulos={modulos}
-                                    usuarios={usuarios}
-                                    onUpdateConfig={handleUpdateConfig}
-                                    onUpdateModulo={handleUpdateModulo}
-                                />
-                            )}
-                        </main>
+                        {/* Reservar Recurso */}
+                        {currentView === 'home' && selectedModulo && !moduloParaFila && (
+                            <ReservaRecurso 
+                                modulo={selectedModulo}
+                                recursos={recursos}
+                                reservas={reservas}
+                                currentUser={currentUser}
+                                onReservar={handleReservar}
+                                onVoltar={handleVoltar}
+                                onEntrarFila={handleEntrarFila}
+                            />
+                        )}
                         
-                        <BottomNav 
-                            currentView={currentView}
-                            onNavigate={setCurrentView}
-                            role={currentUser.role}
+                        {/* Entrar na Fila */}
+                        {moduloParaFila && (
+                            <TelaEntrarFila 
+                                modulo={moduloParaFila}
+                                recursos={recursos}
+                                currentUser={currentUser}
+                                filaEspera={filaEspera}
+                                onEntrar={handleConfirmarEntradaFila}
+                                onVoltar={handleVoltar}
+                            />
+                        )}
+                        
+                        {/* Minhas Reservas */}
+                        {currentView === 'reservas' && (
+                            <MinhasReservas 
+                                reservas={reservas}
+                                recursos={recursos}
+                                modulos={modulos}
+                                currentUser={currentUser}
+                                onCancelar={handleCancelarReserva}
+                            />
+                        )}
+                        
+                        {/* Fila de Espera */}
+                        {currentView === 'fila' && (
+                            <TelaFilaEspera 
+                                modulos={modulos}
+                                recursos={recursos}
+                                filaEspera={filaEspera}
+                                currentUser={currentUser}
+                                usuarios={usuarios}
+                                onCancelarFila={handleCancelarFila}
+                                onAdicionarNaFila={handleAdicionarNaFila}
+                                onAtribuirDaFila={handleAtribuirDaFila}
+                            />
+                        )}
+                        
+                        {/* Lousa Digital */}
+                        {currentView === 'lousa' && (currentUser.role === 'Admin' || currentUser.role === 'Funcionario') && (
+                            <LousaDigital 
+                                reservas={reservas}
+                                recursos={recursos}
+                                modulos={modulos}
+                                usuarios={usuarios}
+                                filaEspera={filaEspera}
+                                onConfirmarPresenca={handleConfirmarPresenca}
+                                onRegistrarNoShow={handleRegistrarNoShow}
+                                onAprovarPagamento={handleAprovarPagamento}
+                                onAtribuirDaFila={handleAtribuirDaFila}
+                            />
+                        )}
+                        
+                        {/* Configurações */}
+                        {currentView === 'config' && currentUser.role === 'Admin' && (
+                            <PainelConfig 
+                                config={config}
+                                modulos={modulos}
+                                usuarios={usuarios}
+                                onUpdateConfig={handleUpdateConfig}
+                                onUpdateModulo={handleUpdateModulo}
+                            />
+                        )}
+                    </main>
+                    
+                    <BottomNav 
+                        currentView={currentView} 
+                        onNavigate={(view) => { setCurrentView(view); setSelectedModulo(null); setModuloParaFila(null); }}
+                        role={currentUser.role}
+                    />
+                    
+                    {notification && (
+                        <Notification 
+                            message={notification.message}
+                            type={notification.type}
+                            onClose={() => setNotification(null)}
                         />
-                    </div>
-                </ClubeContext.Provider>
+                    )}
+                </div>
             );
         };
 
-        // Render
+        // Renderiza o App
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ClubeGestor360 />);
+        root.render(<App />);
     </script>
 </body>
 </html>
