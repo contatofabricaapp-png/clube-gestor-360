@@ -1,0 +1,158 @@
+/* =============================================
+   CLUBE GESTOR 360 - ESTILOS
+   ============================================= */
+
+/* Reset e Base */
+* {
+    font-family: 'Nunito Sans', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: #f8fafc;
+    margin: 0;
+    padding: 0;
+}
+
+/* Safe Area para iOS */
+.pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* =============================================
+   ANIMAÇÕES
+   ============================================= */
+
+/* Modal entrada */
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Slide de notificação */
+@keyframes slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulsação do indicador */
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Pulsação do timer */
+@keyframes timer-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Aviso do timer */
+@keyframes timer-warning {
+    0%, 100% { background-color: #fef2f2; }
+    50% { background-color: #fee2e2; }
+}
+
+/* Classes de animação */
+.animate-modal-in {
+    animation: modal-in 0.25s ease-out forwards;
+}
+
+.animate-slide-down {
+    animation: slide-down 0.3s ease-out forwards;
+}
+
+.animate-pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-timer {
+    animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.animate-timer-warning {
+    animation: timer-warning 1s ease-in-out infinite;
+}
+
+/* =============================================
+   SCROLLBAR CUSTOMIZADA
+   ============================================= */
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+/* Esconde scrollbar em mobile */
+@media (max-width: 768px) {
+    ::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* =============================================
+   UTILIDADES CUSTOMIZADAS
+   ============================================= */
+
+/* Transição suave para cards */
+.card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-hover:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Timer grande */
+.timer-display {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+}
+
+/* Input focus ring */
+.input-focus:focus {
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+/* Badge pequeno */
+.badge-xs {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.375rem;
+}
+
+/* Grid responsivo para quadras */
+@media (min-width: 768px) {
+    .grid-quadras {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .grid-quadras {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
