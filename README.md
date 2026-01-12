@@ -111,13 +111,3 @@ O sistema está preparado para funcionar como Progressive Web App:
 - **Animações**: Suaves e profissionais
 
 ---
-
-## 📄 Licença
-
-MIT License - Livre para uso comercial e pessoal.
-
----
-
-## 🤝 Desenvolvido com Claude
-
-Sistema criado em parceria com [Claude](https://claude.ai) da Anthropic.
