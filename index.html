@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Clube Gestor 360 - Sistema de Gestão Modular</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0F766E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Sistema modular de gestão para clubes e complexos de lazer">
+    
+    <!-- Scripts -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito Sans', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#F0FDFA',
+                            100: '#CCFBF1',
+                            200: '#99F6E4',
+                            300: '#5EEAD4',
+                            400: '#2DD4BF',
+                            500: '#14B8A6',
+                            600: '#0D9488',
+                            700: '#0F766E',
+                            800: '#115E59',
+                            900: '#134E4A',
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { font-family: 'Nunito Sans', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f8fafc; }
+        .pb-safe { padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px)); }
+        
+        @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes slide-down {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-modal-in { animation: modal-in 0.25s ease-out forwards; }
+        .animate-slide-down { animation: slide-down 0.3s ease-out forwards; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        @media (max-width: 768px) {
+            ::-webkit-scrollbar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext, useCallback } = React;
+
+        // ============================================
+        // CONTEXTO GLOBAL DO SISTEMA
+        // ============================================
+        const ClubeContext = createContext();
+
+        // ============================================
+        // DADOS INICIAIS DO SISTEMA
+        // ============================================
+        const initialConfigGlobal = {
+            id: 1,
+            nome_clube: 'Clube Esportivo Horizonte',
+            pix_chave: 'contato@clubehorizonte.com.br',
+            logo_url: null,
+            cor_primaria: '#0F766E',
+            punicao_noshow_limite: 3,
+            punicao_dias_bloqueio: 7
+        };
+
+        const initialModulos = [
+            { id: 1, nome_categoria: 'Tênis', icone: '🎾', status_ativo: true, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 60, antecedencia_maxima: 48, janela_cancelamento: 2 },
+            { id: 2, nome_categoria: 'Futebol', icone: '⚽', status_ativo: true, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 90, antecedencia_maxima: 72, janela_cancelamento: 4 },
+            { id: 3, nome_categoria: 'Quiosque', icone: '🏠', status_ativo: true, tipo_cobranca: 'Pago', valor_padrao: 350, unidade_tempo: 'Diária', antecedencia_maxima: 720, janela_cancelamento: 48 },
+            { id: 4, nome_categoria: 'Salão de Festas', icone: '🎉', status_ativo: true, tipo_cobranca: 'Pago', valor_padrao: 800, unidade_tempo: 'Diária', antecedencia_maxima: 720, janela_cancelamento: 72 },
+            { id: 5, nome_categoria: 'Piscina', icone: '🏊', status_ativo: false, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 120, antecedencia_maxima: 24, janela_cancelamento: 1 },
+            { id: 6, nome_categoria: 'Academia', icone: '🏋️', status_ativo: false, tipo_cobranca: 'Gratuito', valor_padrao: 0, unidade_tempo: 60, antecedencia_maxima: 24, janela_cancelamento: 1 },
+        ];
+
+        const initialRecursos = [
+            { id: 1, id_modulo: 1, nome_identificador: 'Quadra de Tênis 01', capacidade: 4, status_operacional: 'Ativo' },
+            { id: 2, id_modulo: 1, nome_identificador: 'Quadra de Tênis 02', capacidade: 4, status_operacional: 'Ativo' },
+            { id: 3, id_modulo: 1, nome_identificador: 'Quadra de Tênis 03', capacidade: 4, status_operacional: 'Manutencao' },
+            { id: 4, id_modulo: 2, nome_identificador: 'Campo Society 01', capacidade: 14, status_operacional: 'Ativo' },
+            { id: 5, id_modulo: 2, nome_identificador: 'Campo Society 02', capacidade: 14, status_operacional: 'Ativo' },
+            { id: 6, id_modulo: 3, nome_identificador: 'Quiosque 01 - Lago', capacidade: 30, status_operacional: 'Ativo' },
+            { id: 7, id_modulo: 3, nome_identificador: 'Quiosque 02 - Jardim', capacidade: 25, status_operacional: 'Ativo' },
+            { id: 8, id_modulo: 3, nome_identificador: 'Quiosque 03 - Piscina', capacidade: 40, status_operacional: 'Ativo' },
+            { id: 9, id_modulo: 4, nome_identificador: 'Salão Principal', capacidade: 150, status_operacional: 'Ativo' },
+            { id: 10, id_modulo: 4, nome_identificador: 'Salão Anexo', capacidade: 80, status_operacional: 'Ativo' },
+        ];
+
+        const initialUsuarios = [
+            { id: 1, nome: 'Admin Master', matricula: 'ADM001', role: 'Admin', contador_noshow: 0, bloqueado_ate: null },
+            { id: 2, nome: 'João Recepção', matricula: 'FUNC001', role: 'Funcionario', contador_noshow: 0, bloqueado_ate: null },
+            { id: 3, nome: 'Maria Silva', matricula: 'SOC001', role: 'Socio', contador_noshow: 0, bloqueado_ate: null },
+            { id: 4, nome: 'Carlos Santos', matricula: 'SOC002', role: 'Socio', contador_noshow: 2, bloqueado_ate: null },
+            { id: 5, nome: 'Ana Oliveira', matricula: 'SOC003', role: 'Socio', contador_noshow: 0, bloqueado_ate: null },
+        ];
+
+        // ============================================
+        // FUNÇÕES UTILITÁRIAS
+        // ============================================
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        function formatDateBR(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function getTimeProgress(horaInicio, horaFim) {
+            const now = new Date();
+            const [startH, startM] = horaInicio.split(':').map(Number);
+            const [endH, endM] = horaFim.split(':').map(Number);
+            
+            const start = new Date(now);
+            start.setHours(startH, startM, 0);
+            const end = new Date(now);
+            end.setHours(endH, endM, 0);
+            
+            if (now < start) return 0;
+            if (now > end) return 100;
+            
+            const total = end - start;
+            const elapsed = now - start;
+            return Math.round((elapsed / total) * 100);
+        }
+
+        function getProgressColor(progress) {
+            if (progress < 50) return 'bg-emerald-500';
+            if (progress < 80) return 'bg-amber-500';
+            return 'bg-red-500';
+        }
+
+        const generateInitialReservas = () => {
+            const hoje = new Date();
+            return [
+                { id: 1, id_recurso: 1, id_usuario: 3, data: formatDate(hoje), hora_inicio: '08:00', hora_fim: '09:00', status: 'Confirmada', url_comprovante_pix: null, valor: 0 },
+                { id: 2, id_recurso: 1, id_usuario: 4, data: formatDate(hoje), hora_inicio: '09:00', hora_fim: '10:00', status: 'Pendente', url_comprovante_pix: null, valor: 0 },
+                { id: 3, id_recurso: 4, id_usuario: 5, data: formatDate(hoje), hora_inicio: '18:00', hora_fim: '19:30', status: 'Confirmada', url_comprovante_pix: null, valor: 0 },
+                { id: 4, id_recurso: 6, id_usuario: 3, data: formatDate(addDays(hoje, 7)), hora_inicio: '08:00', hora_fim: '22:00', status: 'Aguardando Aprovação', url_comprovante_pix: 'comprovante_1.jpg', valor: 350 },
+                { id: 5, id_recurso: 9, id_usuario: 4, data: formatDate(addDays(hoje, 14)), hora_inicio: '08:00', hora_fim: '22:00', status: 'Confirmada', url_comprovante_pix: 'comprovante_2.jpg', valor: 800 },
+            ];
+        };
+
+        // ============================================
+        // COMPONENTES DE UI
+        // ============================================
+        const Card = ({ children, className = '', onClick }) => (
+            <div 
+                className={`bg-white rounded-2xl shadow-sm border border-slate-100 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${className}`}
+                onClick={onClick}
+            >
+                {children}
+            </div>
+        );
+
+        const Button = ({ children, variant = 'primary', size = 'md', className = '', ...props }) => {
+            const variants = {
+                primary: 'bg-teal-600 hover:bg-teal-700 text-white shadow-sm',
+                secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-700',
+                danger: 'bg-red-500 hover:bg-red-600 text-white',
+                success: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+                warning: 'bg-amber-500 hover:bg-amber-600 text-white',
+                ghost: 'hover:bg-slate-100 text-slate-600',
+            };
+            
+            const sizes = {
+                sm: 'px-3 py-1.5 text-sm',
+                md: 'px-4 py-2.5 text-sm',
+                lg: 'px-6 py-3 text-base',
+            };
+            
+            return (
+                <button 
+                    className={`font-semibold rounded-xl transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+                    {...props}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const Badge = ({ children, variant = 'default', size = 'md' }) => {
+            const variants = {
+                default: 'bg-slate-100 text-slate-700',
+                success: 'bg-emerald-100 text-emerald-700',
+                warning: 'bg-amber-100 text-amber-700',
+                danger: 'bg-red-100 text-red-700',
+                info: 'bg-blue-100 text-blue-700',
+                purple: 'bg-purple-100 text-purple-700',
+            };
+            
+            const sizes = {
+                sm: 'px-2 py-0.5 text-xs',
+                md: 'px-2.5 py-1 text-xs',
+            };
+            
+            return (
+                <span className={`font-semibold rounded-full ${variants[variant]} ${sizes[size]}`}>
+                    {children}
+                </span>
+            );
+        };
+
+        const Toggle = ({ checked, onChange, label }) => (
+            <label className="flex items-center gap-3 cursor-pointer">
+                <div className="relative">
+                    <input 
+                        type="checkbox" 
+                        checked={checked} 
+                        onChange={(e) => onChange(e.target.checked)}
+                        className="sr-only"
+                    />
+                    <div className={`w-12 h-6 rounded-full transition-colors ${checked ? 'bg-teal-500' : 'bg-slate-300'}`}>
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${checked ? 'translate-x-6' : ''}`} />
+                    </div>
+                </div>
+                {label && <span className="text-sm font-medium text-slate-700">{label}</span>}
+            </label>
+        );
+
+        const Input = ({ label, ...props }) => (
+            <div className="space-y-1.5">
+                {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
+                <input 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all text-slate-800"
+                    {...props}
+                />
+            </div>
+        );
+
+        const Select = ({ label, options, ...props }) => (
+            <div className="space-y-1.5">
+                {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
+                <select 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all text-slate-800 bg-white"
+                    {...props}
+                >
+                    {options.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+            </div>
+        );
+
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-modal-in">
+                        <div className="flex items-center justify-between p-4 border-b border-slate-100">
+                            <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+                            {children}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TabBar = ({ tabs, active, onChange }) => (
+            <div className="flex bg-slate-100 rounded-xl p-1">
+                {tabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => onChange(tab.id)}
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                            active === tab.id 
+                                ? 'bg-white text-teal-700 shadow-sm' 
+                                : 'text-slate-600 hover:text-slate-800'
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+        );
+
+        const ProgressBar = ({ value, color }) => (
+            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                    className={`h-full ${color} transition-all duration-500`}
+                    style={{ width: `${value}%` }}
+                />
+            </div>
+        );
+
+        const StatusBadge = ({ status }) => {
+            const config = {
+                'Pendente': { variant: 'warning', label: 'Pendente' },
+                'Confirmada': { variant: 'success', label: 'Confirmada' },
+                'No-Show': { variant: 'danger', label: 'No-Show' },
+                'Finalizada': { variant: 'default', label: 'Finalizada' },
+                'Aguardando Aprovação': { variant: 'info', label: 'Aguardando' },
+                'Cancelada': { variant: 'danger', label: 'Cancelada' },
+            };
+            
+            const { variant, label } = config[status] || { variant: 'default', label: status };
+            return <Badge variant={variant}>{label}</Badge>;
+        };
+
+        // ============================================
+        // COMPONENTES PRINCIPAIS
+        // ============================================
+
+        // HEADER NAVIGATION
+        const Header = ({ currentUser, onLogout }) => (
+            <header className="bg-white border-b border-slate-100 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                            C
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-slate-800 leading-tight">Clube Gestor 360</h1>
+                            <p className="text-xs text-slate-500">{currentUser.nome}</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                        <Badge variant={currentUser.role === 'Admin' ? 'purple' : currentUser.role === 'Funcionario' ? 'info' : 'success'}>
+                            {currentUser.role}
+                        </Badge>
+                        <button 
+                            onClick={onLogout}
+                            className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+        );
+
+        // BOTTOM NAVIGATION (MOBILE)
+        const BottomNav = ({ currentView, onNavigate, role }) => {
+            const navItems = [
+                { id: 'home', icon: '🏠', label: 'Início' },
+                { id: 'reservas', icon: '📅', label: 'Reservas' },
+                ...(role !== 'Socio' ? [{ id: 'lousa', icon: '📋', label: 'Lousa' }] : []),
+                ...(role === 'Admin' ? [{ id: 'config', icon: '⚙️', label: 'Config' }] : []),
+            ];
+            
+            return (
+                <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 pb-safe z-40">
+                    <div className="flex justify-around py-2">
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                onClick={() => onNavigate(item.id)}
+                                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                                    currentView === item.id 
+                                        ? 'text-teal-600' 
+                                        : 'text-slate-400 hover:text-slate-600'
+                                }`}
+                            >
+                                <span className="text-xl">{item.icon}</span>
+                                <span className="text-xs font-medium">{item.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                </nav>
+            );
+        };
+
+        // LOGIN SCREEN
+        const LoginScreen = ({ usuarios, onLogin }) => {
+            const [selectedUser, setSelectedUser] = useState(null);
+            const [password, setPassword] = useState('');
+            
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-teal-600 via-teal-700 to-emerald-800 flex items-center justify-center p-4">
+                    <Card className="w-full max-w-md p-8">
+                        <div className="text-center mb-8">
+                            <div className="w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4 shadow-lg">
+                                C
+                            </div>
+                            <h1 className="text-2xl font-bold text-slate-800">Clube Gestor 360</h1>
+                            <p className="text-slate-500 mt-1">Sistema de Gestão Modular</p>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <Select 
+                                label="Selecione o Usuário"
+                                value={selectedUser?.id || ''}
+                                onChange={(e) => setSelectedUser(usuarios.find(u => u.id === Number(e.target.value)))}
+                                options={[
+                                    { value: '', label: 'Selecionar...' },
+                                    ...usuarios.map(u => ({ value: u.id, label: `${u.nome} (${u.role})` }))
+                                ]}
+                            />
+                            
+                            <Input 
+                                label="Senha"
+                                type="password"
+                                placeholder="Digite sua senha"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            
+                            <Button 
+                                className="w-full mt-6" 
+                                size="lg"
+                                onClick={() => selectedUser && onLogin(selectedUser)}
+                                disabled={!selectedUser}
+                            >
+                                Entrar
+                            </Button>
+                        </div>
+                        
+                        <p className="text-xs text-center text-slate-400 mt-6">
+                            Demo: selecione qualquer usuário para entrar
+                        </p>
+                    </Card>
+                </div>
+            );
+        };
+
+        // HOME SÓCIO - MÓDULOS DINÂMICOS
+        const HomeSocio = ({ modulos, onSelectModulo }) => {
+            const modulosAtivos = modulos.filter(m => m.status_ativo);
+            
+            return (
+                <div className="p-4 space-y-6">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Olá! 👋</h2>
+                        <p className="text-slate-500">O que você quer fazer hoje?</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        {modulosAtivos.map(modulo => (
+                            <Card 
+                                key={modulo.id}
+                                className="p-6 hover:shadow-lg transition-all hover:-translate-y-1"
+                                onClick={() => onSelectModulo(modulo)}
+                            >
+                                <div className="text-4xl mb-3">{modulo.icone}</div>
+                                <h3 className="font-bold text-slate-800">{modulo.nome_categoria}</h3>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    {modulo.tipo_cobranca === 'Pago' 
+                                        ? `R$ ${modulo.valor_padrao}`
+                                        : 'Gratuito'
+                                    }
+                                </p>
+                                {modulo.tipo_cobranca === 'Pago' && (
+                                    <div className="mt-2">
+                                        <Badge variant="warning" size="sm">Pago</Badge>
+                                    </div>
+                                )}
+                            </Card>
+                        ))}
+                    </div>
+                    
+                    {modulosAtivos.length === 0 && (
+                        <Card className="p-8 text-center">
+                            <p className="text-slate-500">Nenhum módulo disponível no momento.</p>
+                        </Card>
+                    )}
+                </div>
+            );
+        };
+
+        // TELA DE RESERVA DE RECURSO
+        const ReservaRecurso = ({ modulo, recursos, reservas, currentUser, onReservar, onVoltar }) => {
+            const [step, setStep] = useState('recurso');
+            const [selectedRecurso, setSelectedRecurso] = useState(null);
+            const [selectedData, setSelectedData] = useState(formatDate(new Date()));
+            const [selectedHorario, setSelectedHorario] = useState(null);
+            const [comprovante, setComprovante] = useState(null);
+            
+            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Ativo');
+            
+            const gerarHorarios = () => {
+                const horarios = [];
+                const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
+                
+                for (let h = 6; h < 22; h++) {
+                    const hora = `${String(h).padStart(2, '0')}:00`;
+                    const horaFimH = h + Math.floor(duracao / 60);
+                    const horaFimM = duracao % 60;
+                    const horaFim = `${String(horaFimH).padStart(2, '0')}:${String(horaFimM).padStart(2, '0')}`;
+                    
+                    const reservado = reservas.some(r => 
+                        r.id_recurso === selectedRecurso?.id && 
+                        r.data === selectedData && 
+                        r.hora_inicio === hora &&
+                        r.status !== 'Cancelada'
+                    );
+                    
+                    if (!reservado && horaFimH <= 22) {
+                        horarios.push({ inicio: hora, fim: horaFim });
+                    }
+                }
+                return horarios;
+            };
+            
+            const handleConfirmar = () => {
+                const novaReserva = {
+                    id: Date.now(),
+                    id_recurso: selectedRecurso.id,
+                    id_usuario: currentUser.id,
+                    data: selectedData,
+                    hora_inicio: selectedHorario.inicio,
+                    hora_fim: selectedHorario.fim,
+                    status: modulo.tipo_cobranca === 'Pago' ? 'Aguardando Aprovação' : 'Pendente',
+                    url_comprovante_pix: comprovante,
+                    valor: modulo.valor_padrao
+                };
+                onReservar(novaReserva);
+            };
+            
+            return (
+                <div className="p-4 space-y-4">
+                    <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Voltar
+                    </button>
+                    
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">{modulo.icone}</span>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">{modulo.nome_categoria}</h2>
+                            <p className="text-sm text-slate-500">
+                                {modulo.tipo_cobranca === 'Pago' ? `R$ ${modulo.valor_padrao}` : 'Gratuito'}
+                                {typeof modulo.unidade_tempo === 'number' && ` • ${modulo.unidade_tempo} min`}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* STEP 1: ESCOLHER RECURSO */}
+                    {step === 'recurso' && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-slate-700">Escolha o local:</h3>
+                            {recursosDoModulo.map(recurso => (
+                                <Card 
+                                    key={recurso.id}
+                                    className={`p-4 border-2 transition-all ${selectedRecurso?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent'}`}
+                                    onClick={() => setSelectedRecurso(recurso)}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-semibold text-slate-800">{recurso.nome_identificador}</h4>
+                                            <p className="text-sm text-slate-500">Capacidade: {recurso.capacidade} pessoas</p>
+                                        </div>
+                                        {selectedRecurso?.id === recurso.id && (
+                                            <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card>
+                            ))}
+                            
+                            <Button 
+                                className="w-full mt-4" 
+                                disabled={!selectedRecurso}
+                                onClick={() => setStep('data')}
+                            >
+                                Continuar
+                            </Button>
+                        </div>
+                    )}
+                    
+                    {/* STEP 2: ESCOLHER DATA */}
+                    {step === 'data' && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-slate-700">Escolha a data:</h3>
+                            <Input 
+                                type="date"
+                                value={selectedData}
+                                onChange={(e) => setSelectedData(e.target.value)}
+                                min={formatDate(new Date())}
+                            />
+                            
+                            <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">
+                                ⏰ Antecedência máxima: {modulo.antecedencia_maxima}h
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep('recurso')}>Voltar</Button>
+                                <Button className="flex-1" onClick={() => setStep('horario')}>Continuar</Button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* STEP 3: ESCOLHER HORÁRIO */}
+                    {step === 'horario' && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-slate-700">Escolha o horário:</h3>
+                            <p className="text-sm text-slate-500">{selectedRecurso.nome_identificador} • {formatDateBR(selectedData)}</p>
+                            
+                            <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                                {gerarHorarios().map(horario => (
+                                    <button
+                                        key={horario.inicio}
+                                        onClick={() => setSelectedHorario(horario)}
+                                        className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                                            selectedHorario?.inicio === horario.inicio
+                                                ? 'bg-teal-500 text-white'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                        }`}
+                                    >
+                                        {horario.inicio}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep('data')}>Voltar</Button>
+                                <Button 
+                                    className="flex-1"
+                                    disabled={!selectedHorario}
+                                    onClick={() => modulo.tipo_cobranca === 'Pago' ? setStep('pagamento') : setStep('confirmacao')}
+                                >
+                                    Continuar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* STEP 4: PAGAMENTO (APENAS PARA PAGOS) */}
+                    {step === 'pagamento' && (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-slate-700">Pagamento via PIX:</h3>
+                            
+                            <Card className="p-4 bg-slate-50">
+                                <p className="text-sm text-slate-500 mb-2">Valor:</p>
+                                <p className="text-3xl font-bold text-slate-800">R$ {modulo.valor_padrao},00</p>
+                            </Card>
+                            
+                            <Card className="p-4">
+                                <p className="text-sm text-slate-500 mb-2">Chave PIX:</p>
+                                <div className="flex items-center gap-2">
+                                    <code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono">
+                                        contato@clubehorizonte.com.br
+                                    </code>
+                                    <Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText('contato@clubehorizonte.com.br')}>
+                                        Copiar
+                                    </Button>
+                                </div>
+                            </Card>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    Upload do Comprovante:
+                                </label>
+                                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => setComprovante(e.target.files[0]?.name || null)}
+                                        className="hidden"
+                                        id="comprovante"
+                                    />
+                                    <label htmlFor="comprovante" className="cursor-pointer">
+                                        {comprovante ? (
+                                            <div className="text-teal-600">
+                                                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <p className="font-medium">{comprovante}</p>
+                                            </div>
+                                        ) : (
+                                            <div className="text-slate-400">
+                                                <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <p>Toque para enviar foto</p>
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep('horario')}>Voltar</Button>
+                                <Button 
+                                    className="flex-1"
+                                    disabled={!comprovante}
+                                    onClick={() => setStep('confirmacao')}
+                                >
+                                    Enviar Comprovante
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* STEP 5: CONFIRMAÇÃO */}
+                    {step === 'confirmacao' && (
+                        <div className="space-y-4">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800">Confirmar Reserva</h3>
+                            </div>
+                            
+                            <Card className="p-4 space-y-3">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Local:</span>
+                                    <span className="font-medium text-slate-800">{selectedRecurso.nome_identificador}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Data:</span>
+                                    <span className="font-medium text-slate-800">{formatDateBR(selectedData)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Horário:</span>
+                                    <span className="font-medium text-slate-800">{selectedHorario.inicio} - {selectedHorario.fim}</span>
+                                </div>
+                                {modulo.tipo_cobranca === 'Pago' && (
+                                    <div className="flex justify-between border-t pt-3">
+                                        <span className="text-slate-500">Valor:</span>
+                                        <span className="font-bold text-teal-600">R$ {modulo.valor_padrao},00</span>
+                                    </div>
+                                )}
+                            </Card>
+                            
+                            {modulo.tipo_cobranca === 'Pago' && (
+                                <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">
+                                    ⏳ Sua reserva ficará como "Aguardando Aprovação" até o clube confirmar o pagamento.
+                                </div>
+                            )}
+                            
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep(modulo.tipo_cobranca === 'Pago' ? 'pagamento' : 'horario')}>
+                                    Voltar
+                                </Button>
+                                <Button className="flex-1" onClick={handleConfirmar}>
+                                    Confirmar Reserva
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // MINHAS RESERVAS
+        const MinhasReservas = ({ reservas, recursos, modulos, currentUser, onCancelar }) => {
+            const minhasReservas = reservas.filter(r => r.id_usuario === currentUser.id);
+            const hoje = formatDate(new Date());
+            
+            const getRecurso = (id) => recursos.find(r => r.id === id);
+            const getModulo = (idRecurso) => {
+                const recurso = getRecurso(idRecurso);
+                return modulos.find(m => m.id === recurso?.id_modulo);
+            };
+            
+            const reservasFuturas = minhasReservas.filter(r => r.data >= hoje && r.status !== 'Cancelada');
+            const reservasPassadas = minhasReservas.filter(r => r.data < hoje || r.status === 'Finalizada');
+            
+            return (
+                <div className="p-4 space-y-6">
+                    <h2 className="text-xl font-bold text-slate-800">Minhas Reservas</h2>
+                    
+                    {reservasFuturas.length > 0 && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-slate-600">Próximas</h3>
+                            {reservasFuturas.map(reserva => {
+                                const recurso = getRecurso(reserva.id_recurso);
+                                const modulo = getModulo(reserva.id_recurso);
+                                return (
+                                    <Card key={reserva.id} className="p-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex gap-3">
+                                                <span className="text-2xl">{modulo?.icone}</span>
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-800">{recurso?.nome_identificador}</h4>
+                                                    <p className="text-sm text-slate-500">
+                                                        {formatDateBR(reserva.data)} • {reserva.hora_inicio} - {reserva.hora_fim}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <StatusBadge status={reserva.status} />
+                                        </div>
+                                        
+                                        {reserva.status !== 'Cancelada' && reserva.status !== 'Aguardando Aprovação' && (
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="w-full mt-3 text-red-500 hover:bg-red-50"
+                                                onClick={() => onCancelar(reserva.id)}
+                                            >
+                                                Cancelar Reserva
+                                            </Button>
+                                        )}
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    )}
+                    
+                    {reservasPassadas.length > 0 && (
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-slate-600">Histórico</h3>
+                            {reservasPassadas.slice(0, 5).map(reserva => {
+                                const recurso = getRecurso(reserva.id_recurso);
+                                const modulo = getModulo(reserva.id_recurso);
+                                return (
+                                    <Card key={reserva.id} className="p-4 opacity-60">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xl">{modulo?.icone}</span>
+                                            <div className="flex-1">
+                                                <h4 className="font-medium text-slate-700">{recurso?.nome_identificador}</h4>
+                                                <p className="text-sm text-slate-400">{formatDateBR(reserva.data)}</p>
+                                            </div>
+                                            <StatusBadge status={reserva.status} />
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    )}
+                    
+                    {minhasReservas.length === 0 && (
+                        <Card className="p-8 text-center">
+                            <div className="text-4xl mb-3">📅</div>
+                            <p className="text-slate-500">Você ainda não tem reservas.</p>
+                        </Card>
+                    )}
+                </div>
+            );
+        };
+
+        // LOUSA DIGITAL (FUNCIONÁRIO/ADMIN)
+        const LousaDigital = ({ modulos, recursos, reservas, usuarios, onConfirmarPresenca, onRegistrarNoShow, onAprovarPagamento }) => {
+            const [moduloSelecionado, setModuloSelecionado] = useState(null);
+            const hoje = formatDate(new Date());
+            
+            const modulosAtivos = modulos.filter(m => m.status_ativo);
+            
+            const getReservasDoRecurso = (idRecurso) => {
+                return reservas.filter(r => 
+                    r.id_recurso === idRecurso && 
+                    r.data === hoje &&
+                    ['Pendente', 'Confirmada', 'Aguardando Aprovação'].includes(r.status)
+                );
+            };
+            
+            const getUsuario = (id) => usuarios.find(u => u.id === id);
+            
+            const recursosExibidos = moduloSelecionado
+                ? recursos.filter(r => r.id_modulo === moduloSelecionado.id)
+                : recursos.filter(r => modulosAtivos.some(m => m.id === r.id_modulo));
+            
+            return (
+                <div className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-slate-800">Lousa Digital</h2>
+                        <Badge variant="info">{formatDateBR(hoje)}</Badge>
+                    </div>
+                    
+                    {/* Filtro por módulo */}
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        <Button 
+                            variant={moduloSelecionado === null ? 'primary' : 'secondary'}
+                            size="sm"
+                            onClick={() => setModuloSelecionado(null)}
+                        >
+                            Todos
+                        </Button>
+                        {modulosAtivos.map(modulo => (
+                            <Button
+                                key={modulo.id}
+                                variant={moduloSelecionado?.id === modulo.id ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setModuloSelecionado(modulo)}
+                            >
+                                {modulo.icone} {modulo.nome_categoria}
+                            </Button>
+                        ))}
+                    </div>
+                    
+                    {/* Grid de Recursos */}
+                    <div className="space-y-4">
+                        {recursosExibidos.map(recurso => {
+                            const modulo = modulos.find(m => m.id === recurso.id_modulo);
+                            const reservasRecurso = getReservasDoRecurso(recurso.id);
+                            const reservaAtual = reservasRecurso[0];
+                            
+                            return (
+                                <Card key={recurso.id} className={`p-4 ${recurso.status_operacional === 'Manutencao' ? 'opacity-50' : ''}`}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl">{modulo?.icone}</span>
+                                            <div>
+                                                <h3 className="font-semibold text-slate-800">{recurso.nome_identificador}</h3>
+                                                <Badge 
+                                                    variant={recurso.status_operacional === 'Ativo' ? 'success' : 'warning'}
+                                                    size="sm"
+                                                >
+                                                    {recurso.status_operacional}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {reservaAtual ? (
+                                        <div className="space-y-3">
+                                            <div className="bg-slate-50 p-3 rounded-xl">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div>
+                                                        <p className="font-medium text-slate-800">{getUsuario(reservaAtual.id_usuario)?.nome}</p>
+                                                        <p className="text-sm text-slate-500">{reservaAtual.hora_inicio} - {reservaAtual.hora_fim}</p>
+                                                    </div>
+                                                    <StatusBadge status={reservaAtual.status} />
+                                                </div>
+                                                
+                                                {reservaAtual.status === 'Confirmada' && (
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between text-xs text-slate-500">
+                                                            <span>Progresso</span>
+                                                            <span>{getTimeProgress(reservaAtual.hora_inicio, reservaAtual.hora_fim)}%</span>
+                                                        </div>
+                                                        <ProgressBar 
+                                                            value={getTimeProgress(reservaAtual.hora_inicio, reservaAtual.hora_fim)}
+                                                            color={getProgressColor(getTimeProgress(reservaAtual.hora_inicio, reservaAtual.hora_fim))}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex gap-2">
+                                                {reservaAtual.status === 'Pendente' && (
+                                                    <>
+                                                        <Button 
+                                                            variant="success" 
+                                                            size="sm" 
+                                                            className="flex-1"
+                                                            onClick={() => onConfirmarPresenca(reservaAtual.id)}
+                                                        >
+                                                            ✓ Confirmar
+                                                        </Button>
+                                                        <Button 
+                                                            variant="danger" 
+                                                            size="sm" 
+                                                            className="flex-1"
+                                                            onClick={() => onRegistrarNoShow(reservaAtual.id)}
+                                                        >
+                                                            ✗ No-Show
+                                                        </Button>
+                                                    </>
+                                                )}
+                                                
+                                                {reservaAtual.status === 'Aguardando Aprovação' && (
+                                                    <Button 
+                                                        variant="success" 
+                                                        size="sm" 
+                                                        className="flex-1"
+                                                        onClick={() => onAprovarPagamento(reservaAtual.id)}
+                                                    >
+                                                        💰 Aprovar Pagamento
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4 text-slate-400 bg-slate-50 rounded-xl">
+                                            <p className="text-lg">✓</p>
+                                            <p className="text-sm">Livre</p>
+                                        </div>
+                                    )}
+                                </Card>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
+        // PAINEL DE CONFIGURAÇÕES (ADMIN)
+        const PainelConfig = ({ config, modulos, usuarios, onUpdateConfig, onUpdateModulo }) => {
+            const [activeTab, setActiveTab] = useState('modulos');
+            const [editingModulo, setEditingModulo] = useState(null);
+            const [masterPassword, setMasterPassword] = useState('');
+            const [isUnlocked, setIsUnlocked] = useState(false);
+            
+            if (!isUnlocked) {
+                return (
+                    <div className="p-4">
+                        <Card className="p-6 text-center">
+                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">Área Protegida</h3>
+                            <p className="text-sm text-slate-500 mb-4">Digite a senha master para acessar as configurações.</p>
+                            
+                            <Input 
+                                type="password"
+                                placeholder="Senha master"
+                                value={masterPassword}
+                                onChange={(e) => setMasterPassword(e.target.value)}
+                            />
+                            
+                            <Button onClick={() => masterPassword === '1234' && setIsUnlocked(true)} className="w-full mt-4">
+                                Desbloquear
+                            </Button>
+                            
+                            <p className="text-xs text-slate-400 mt-4">Demo: senha é 1234</p>
+                        </Card>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="p-4 space-y-4">
+                    <h2 className="text-xl font-bold text-slate-800">Configurações</h2>
+                    
+                    <TabBar 
+                        tabs={[
+                            { id: 'modulos', label: 'Módulos' },
+                            { id: 'clube', label: 'Clube' },
+                            { id: 'usuarios', label: 'Usuários' },
+                        ]}
+                        active={activeTab}
+                        onChange={setActiveTab}
+                    />
+                    
+                    {/* TAB: MÓDULOS */}
+                    {activeTab === 'modulos' && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-500">Ative/desative módulos e configure regras de uso.</p>
+                            
+                            {modulos.map(modulo => (
+                                <Card key={modulo.id} className="p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl">{modulo.icone}</span>
+                                            <div>
+                                                <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                                <Badge variant={modulo.tipo_cobranca === 'Pago' ? 'warning' : 'default'} size="sm">
+                                                    {modulo.tipo_cobranca}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                        <Toggle 
+                                            checked={modulo.status_ativo}
+                                            onChange={(checked) => onUpdateModulo(modulo.id, { status_ativo: checked })}
+                                        />
+                                    </div>
+                                    
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        className="w-full"
+                                        onClick={() => setEditingModulo({...modulo})}
+                                    >
+                                        Editar Regras
+                                    </Button>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* TAB: CLUBE */}
+                    {activeTab === 'clube' && (
+                        <div className="space-y-4">
+                            <Card className="p-4 space-y-4">
+                                <Input 
+                                    label="Nome do Clube"
+                                    value={config.nome_clube}
+                                    onChange={(e) => onUpdateConfig({ nome_clube: e.target.value })}
+                                />
+                                
+                                <Input 
+                                    label="Chave PIX"
+                                    value={config.pix_chave}
+                                    onChange={(e) => onUpdateConfig({ pix_chave: e.target.value })}
+                                />
+                                
+                                <div className="border-t pt-4">
+                                    <h4 className="font-semibold text-slate-700 mb-3">Regras de Punição</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Input 
+                                            label="Limite de No-Shows"
+                                            type="number"
+                                            value={config.punicao_noshow_limite}
+                                            onChange={(e) => onUpdateConfig({ punicao_noshow_limite: Number(e.target.value) })}
+                                        />
+                                        <Input 
+                                            label="Dias de Bloqueio"
+                                            type="number"
+                                            value={config.punicao_dias_bloqueio}
+                                            onChange={(e) => onUpdateConfig({ punicao_dias_bloqueio: Number(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+                    
+                    {/* TAB: USUÁRIOS */}
+                    {activeTab === 'usuarios' && (
+                        <div className="space-y-3">
+                            {usuarios.map(usuario => (
+                                <Card key={usuario.id} className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-semibold text-slate-800">{usuario.nome}</h4>
+                                            <p className="text-sm text-slate-500">Matrícula: {usuario.matricula}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge variant={
+                                                usuario.role === 'Admin' ? 'purple' :
+                                                usuario.role === 'Funcionario' ? 'info' : 'success'
+                                            }>
+                                                {usuario.role}
+                                            </Badge>
+                                            {usuario.contador_noshow > 0 && (
+                                                <p className="text-xs text-red-500 mt-1">
+                                                    No-shows: {usuario.contador_noshow}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                    
+                    {/* MODAL: EDITAR MÓDULO */}
+                    <Modal 
+                        isOpen={!!editingModulo}
+                        onClose={() => setEditingModulo(null)}
+                        title={`Configurar ${editingModulo?.nome_categoria}`}
+                    >
+                        {editingModulo && (
+                            <div className="space-y-4">
+                                <Select 
+                                    label="Tipo de Cobrança"
+                                    value={editingModulo.tipo_cobranca}
+                                    onChange={(e) => setEditingModulo({ ...editingModulo, tipo_cobranca: e.target.value })}
+                                    options={[
+                                        { value: 'Gratuito', label: 'Gratuito' },
+                                        { value: 'Pago', label: 'Pago' },
+                                    ]}
+                                />
+                                
+                                {editingModulo.tipo_cobranca === 'Pago' && (
+                                    <Input 
+                                        label="Valor Padrão (R$)"
+                                        type="number"
+                                        value={editingModulo.valor_padrao}
+                                        onChange={(e) => setEditingModulo({ ...editingModulo, valor_padrao: Number(e.target.value) })}
+                                    />
+                                )}
+                                
+                                <Input 
+                                    label="Tempo de Uso (minutos)"
+                                    type="number"
+                                    value={typeof editingModulo.unidade_tempo === 'number' ? editingModulo.unidade_tempo : 60}
+                                    onChange={(e) => setEditingModulo({ ...editingModulo, unidade_tempo: Number(e.target.value) })}
+                                />
+                                
+                                <Input 
+                                    label="Antecedência Máxima (horas)"
+                                    type="number"
+                                    value={editingModulo.antecedencia_maxima}
+                                    onChange={(e) => setEditingModulo({ ...editingModulo, antecedencia_maxima: Number(e.target.value) })}
+                                />
+                                
+                                <Input 
+                                    label="Janela de Cancelamento (horas)"
+                                    type="number"
+                                    value={editingModulo.janela_cancelamento}
+                                    onChange={(e) => setEditingModulo({ ...editingModulo, janela_cancelamento: Number(e.target.value) })}
+                                />
+                                
+                                <div className="flex gap-2 pt-4">
+                                    <Button variant="secondary" onClick={() => setEditingModulo(null)}>
+                                        Cancelar
+                                    </Button>
+                                    <Button 
+                                        className="flex-1"
+                                        onClick={() => {
+                                            onUpdateModulo(editingModulo.id, editingModulo);
+                                            setEditingModulo(null);
+                                        }}
+                                    >
+                                        Salvar
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
+                </div>
+            );
+        };
+
+        // ============================================
+        // APP PRINCIPAL
+        // ============================================
+        const ClubeGestor360 = () => {
+            // Estados globais
+            const [config, setConfig] = useState(initialConfigGlobal);
+            const [modulos, setModulos] = useState(initialModulos);
+            const [recursos, setRecursos] = useState(initialRecursos);
+            const [reservas, setReservas] = useState(generateInitialReservas);
+            const [usuarios, setUsuarios] = useState(initialUsuarios);
+            
+            // Estados de UI
+            const [currentUser, setCurrentUser] = useState(null);
+            const [currentView, setCurrentView] = useState('home');
+            const [selectedModulo, setSelectedModulo] = useState(null);
+            const [notification, setNotification] = useState(null);
+            
+            // Mostrar notificação
+            const showNotification = useCallback((message, type = 'success') => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 3000);
+            }, []);
+            
+            // Handlers de configuração
+            const handleUpdateConfig = (updates) => {
+                setConfig(prev => ({ ...prev, ...updates }));
+                showNotification('Configurações atualizadas!');
+            };
+            
+            const handleUpdateModulo = (id, updates) => {
+                setModulos(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+                showNotification('Módulo atualizado!');
+            };
+            
+            // Handlers de reserva
+            const handleNovaReserva = (reserva) => {
+                setReservas(prev => [...prev, reserva]);
+                setSelectedModulo(null);
+                setCurrentView('reservas');
+                showNotification('Reserva criada com sucesso!');
+            };
+            
+            const handleCancelarReserva = (id) => {
+                setReservas(prev => prev.map(r => 
+                    r.id === id ? { ...r, status: 'Cancelada' } : r
+                ));
+                showNotification('Reserva cancelada.');
+            };
+            
+            const handleConfirmarPresenca = (id) => {
+                setReservas(prev => prev.map(r => 
+                    r.id === id ? { ...r, status: 'Confirmada' } : r
+                ));
+                showNotification('Presença confirmada!', 'success');
+            };
+            
+            const handleRegistrarNoShow = (idReserva) => {
+                const reserva = reservas.find(r => r.id === idReserva);
+                if (!reserva) return;
+                
+                setReservas(prev => prev.map(r => 
+                    r.id === idReserva ? { ...r, status: 'No-Show' } : r
+                ));
+                
+                setUsuarios(prev => prev.map(u => {
+                    if (u.id === reserva.id_usuario) {
+                        const novoContador = u.contador_noshow + 1;
+                        if (novoContador >= config.punicao_noshow_limite) {
+                            const bloqueadoAte = addDays(new Date(), config.punicao_dias_bloqueio);
+                            return { 
+                                ...u, 
+                                contador_noshow: novoContador, 
+                                bloqueado_ate: formatDate(bloqueadoAte) 
+                            };
+                        }
+                        return { ...u, contador_noshow: novoContador };
+                    }
+                    return u;
+                }));
+                
+                showNotification('No-Show registrado!', 'warning');
+            };
+            
+            const handleAprovarPagamento = (id) => {
+                setReservas(prev => prev.map(r => 
+                    r.id === id ? { ...r, status: 'Confirmada' } : r
+                ));
+                showNotification('Pagamento aprovado!', 'success');
+            };
+            
+            // Login
+            const handleLogin = (user) => {
+                setCurrentUser(user);
+                setCurrentView('home');
+            };
+            
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setCurrentView('home');
+                setSelectedModulo(null);
+            };
+            
+            // Render login se não logado
+            if (!currentUser) {
+                return <LoginScreen usuarios={usuarios} onLogin={handleLogin} />;
+            }
+            
+            // Render principal
+            return (
+                <ClubeContext.Provider value={{ config, modulos, recursos, reservas, usuarios }}>
+                    <div className="min-h-screen bg-slate-50 pb-20">
+                        <Header 
+                            currentUser={currentUser}
+                            onLogout={handleLogout}
+                        />
+                        
+                        {/* NOTIFICAÇÃO */}
+                        {notification && (
+                            <div className={`fixed top-20 left-4 right-4 z-50 p-4 rounded-xl shadow-lg animate-slide-down ${
+                                notification.type === 'success' ? 'bg-emerald-500 text-white' :
+                                notification.type === 'warning' ? 'bg-amber-500 text-white' :
+                                'bg-red-500 text-white'
+                            }`}>
+                                {notification.message}
+                            </div>
+                        )}
+                        
+                        {/* CONTEÚDO PRINCIPAL */}
+                        <main>
+                            {/* VIEW: HOME */}
+                            {currentView === 'home' && !selectedModulo && (
+                                <HomeSocio 
+                                    modulos={modulos}
+                                    onSelectModulo={setSelectedModulo}
+                                />
+                            )}
+                            
+                            {/* VIEW: RESERVA DE RECURSO */}
+                            {currentView === 'home' && selectedModulo && (
+                                <ReservaRecurso 
+                                    modulo={selectedModulo}
+                                    recursos={recursos}
+                                    reservas={reservas}
+                                    currentUser={currentUser}
+                                    onReservar={handleNovaReserva}
+                                    onVoltar={() => setSelectedModulo(null)}
+                                />
+                            )}
+                            
+                            {/* VIEW: MINHAS RESERVAS */}
+                            {currentView === 'reservas' && (
+                                <MinhasReservas 
+                                    reservas={reservas}
+                                    recursos={recursos}
+                                    modulos={modulos}
+                                    currentUser={currentUser}
+                                    onCancelar={handleCancelarReserva}
+                                />
+                            )}
+                            
+                            {/* VIEW: LOUSA DIGITAL */}
+                            {currentView === 'lousa' && (currentUser.role === 'Admin' || currentUser.role === 'Funcionario') && (
+                                <LousaDigital 
+                                    modulos={modulos}
+                                    recursos={recursos}
+                                    reservas={reservas}
+                                    usuarios={usuarios}
+                                    onConfirmarPresenca={handleConfirmarPresenca}
+                                    onRegistrarNoShow={handleRegistrarNoShow}
+                                    onAprovarPagamento={handleAprovarPagamento}
+                                />
+                            )}
+                            
+                            {/* VIEW: CONFIGURAÇÕES */}
+                            {currentView === 'config' && currentUser.role === 'Admin' && (
+                                <PainelConfig 
+                                    config={config}
+                                    modulos={modulos}
+                                    usuarios={usuarios}
+                                    onUpdateConfig={handleUpdateConfig}
+                                    onUpdateModulo={handleUpdateModulo}
+                                />
+                            )}
+                        </main>
+                        
+                        <BottomNav 
+                            currentView={currentView}
+                            onNavigate={setCurrentView}
+                            role={currentUser.role}
+                        />
+                    </div>
+                </ClubeContext.Provider>
+            );
+        };
+
+        // Render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<ClubeGestor360 />);
+    </script>
+</body>
+</html>
