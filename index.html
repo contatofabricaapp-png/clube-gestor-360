@@ -61,13 +61,13 @@
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 1; }
-            100% { transform: scale(1.3); opacity: 0; }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         .animate-modal-in { animation: modal-in 0.25s ease-out forwards; }
         .animate-slide-down { animation: slide-down 0.3s ease-out forwards; }
-        .animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+        .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
         
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
@@ -83,6 +83,18 @@
     
     <script type="text/babel">
         const { useState, useEffect, createContext, useContext, useCallback } = React;
+
+        // ============================================
+        // CONSTANTES DE STATUS
+        // ============================================
+        const STATUS_RECURSOS = {
+            'Livre': { cor: 'emerald', icone: '🟢', label: 'Livre', descricao: 'Disponível para uso' },
+            'Ocupada': { cor: 'blue', icone: '🔵', label: 'Ocupada', descricao: 'Em uso no momento' },
+            'Manutencao': { cor: 'amber', icone: '🟡', label: 'Manutenção', descricao: 'Reparo programado' },
+            'Reservada': { cor: 'purple', icone: '🟣', label: 'Reservada', descricao: 'Evento/Torneio' },
+            'Interditada': { cor: 'red', icone: '🔴', label: 'Interditada', descricao: 'Imprópria para uso' },
+            'Limpeza': { cor: 'slate', icone: '⚪', label: 'Limpeza', descricao: 'Em limpeza' },
+        };
 
         // ============================================
         // CONTEXTO GLOBAL DO SISTEMA
@@ -102,7 +114,6 @@
             punicao_dias_bloqueio: 7
         };
 
-        // MÓDULOS COM CONFIGURAÇÃO DE FILA
         const initialModulos = [
             { 
                 id: 1, 
@@ -114,10 +125,9 @@
                 unidade_tempo: 60, 
                 antecedencia_maxima: 48, 
                 janela_cancelamento: 2,
-                // NOVAS CONFIGS DE FILA
                 fila_habilitada: true,
-                tipo_fila: 'checkin', // 'checkin' ou 'agendamento'
-                antecedencia_fila_minutos: 30 // tempo antes do horário que pode entrar na fila
+                tipo_fila: 'checkin',
+                antecedencia_fila_minutos: 30
             },
             { 
                 id: 2, 
@@ -192,16 +202,16 @@
         ];
 
         const initialRecursos = [
-            { id: 1, id_modulo: 1, nome_identificador: 'Quadra de Tênis 01', capacidade: 4, status_operacional: 'Ativo' },
-            { id: 2, id_modulo: 1, nome_identificador: 'Quadra de Tênis 02', capacidade: 4, status_operacional: 'Ativo' },
-            { id: 3, id_modulo: 1, nome_identificador: 'Quadra de Tênis 03', capacidade: 4, status_operacional: 'Manutencao' },
-            { id: 4, id_modulo: 2, nome_identificador: 'Campo Society 01', capacidade: 14, status_operacional: 'Ativo' },
-            { id: 5, id_modulo: 2, nome_identificador: 'Campo Society 02', capacidade: 14, status_operacional: 'Ativo' },
-            { id: 6, id_modulo: 3, nome_identificador: 'Quiosque 01 - Lago', capacidade: 30, status_operacional: 'Ativo' },
-            { id: 7, id_modulo: 3, nome_identificador: 'Quiosque 02 - Jardim', capacidade: 25, status_operacional: 'Ativo' },
-            { id: 8, id_modulo: 3, nome_identificador: 'Quiosque 03 - Piscina', capacidade: 40, status_operacional: 'Ativo' },
-            { id: 9, id_modulo: 4, nome_identificador: 'Salão Principal', capacidade: 150, status_operacional: 'Ativo' },
-            { id: 10, id_modulo: 4, nome_identificador: 'Salão Anexo', capacidade: 80, status_operacional: 'Ativo' },
+            { id: 1, id_modulo: 1, nome_identificador: 'Quadra de Tênis 01', capacidade: 4, status_operacional: 'Livre', motivo_status: null },
+            { id: 2, id_modulo: 1, nome_identificador: 'Quadra de Tênis 02', capacidade: 4, status_operacional: 'Livre', motivo_status: null },
+            { id: 3, id_modulo: 1, nome_identificador: 'Quadra de Tênis 03', capacidade: 4, status_operacional: 'Manutencao', motivo_status: 'Troca de rede' },
+            { id: 4, id_modulo: 2, nome_identificador: 'Campo Society 01', capacidade: 14, status_operacional: 'Livre', motivo_status: null },
+            { id: 5, id_modulo: 2, nome_identificador: 'Campo Society 02', capacidade: 14, status_operacional: 'Interditada', motivo_status: 'Gramado molhado - chuva' },
+            { id: 6, id_modulo: 3, nome_identificador: 'Quiosque 01 - Lago', capacidade: 30, status_operacional: 'Livre', motivo_status: null },
+            { id: 7, id_modulo: 3, nome_identificador: 'Quiosque 02 - Jardim', capacidade: 25, status_operacional: 'Livre', motivo_status: null },
+            { id: 8, id_modulo: 3, nome_identificador: 'Quiosque 03 - Piscina', capacidade: 40, status_operacional: 'Reservada', motivo_status: 'Festa de fim de ano' },
+            { id: 9, id_modulo: 4, nome_identificador: 'Salão Principal', capacidade: 150, status_operacional: 'Livre', motivo_status: null },
+            { id: 10, id_modulo: 4, nome_identificador: 'Salão Anexo', capacidade: 80, status_operacional: 'Limpeza', motivo_status: null },
         ];
 
         const initialUsuarios = [
@@ -230,15 +240,6 @@
             return `${day}/${month}/${year}`;
         }
 
-        function formatDateTime(date) {
-            return date.toLocaleString('pt-BR', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
-        }
-
         function getTimeProgress(horaInicio, horaFim) {
             const now = new Date();
             const [startH, startM] = horaInicio.split(':').map(Number);
@@ -263,12 +264,10 @@
             return 'bg-red-500';
         }
 
-        // Gera horários de hora cheia e meia hora
         function gerarHorariosDisponiveis(modulo, recursoId, data, reservas) {
             const horarios = [];
             const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
             
-            // Horários: 06:00, 06:30, 07:00, 07:30, etc.
             for (let h = 6; h < 22; h++) {
                 for (let m = 0; m < 60; m += 30) {
                     const hora = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -277,7 +276,6 @@
                     const horaFimM = horaFimMinutos % 60;
                     const horaFim = `${String(horaFimH).padStart(2, '0')}:${String(horaFimM).padStart(2, '0')}`;
                     
-                    // Verifica conflito com reservas existentes
                     const horaInicioNum = h * 60 + m;
                     const horaFimNum = horaFimMinutos;
                     
@@ -312,29 +310,28 @@
             ];
         };
 
-        // FILA DE ESPERA INICIAL
         const generateInitialFilaEspera = () => {
             const hoje = new Date();
             return [
                 { 
                     id: 1, 
-                    id_modulo: 1, // Tênis
-                    id_recurso: null, // null = qualquer quadra
-                    id_usuario: 5, // Ana
+                    id_modulo: 1,
+                    id_recurso: null,
+                    id_usuario: 5,
                     data: formatDate(hoje),
                     horario_desejado: '10:00',
-                    created_at: new Date(hoje.getTime() - 30 * 60000).toISOString(), // 30 min atrás
-                    status: 'Aguardando', // 'Aguardando', 'Atendido', 'Cancelado', 'Expirado'
-                    tipo_entrada: 'checkin' // 'checkin' ou 'agendamento'
+                    created_at: new Date(hoje.getTime() - 30 * 60000).toISOString(),
+                    status: 'Aguardando',
+                    tipo_entrada: 'checkin'
                 },
                 { 
                     id: 2, 
                     id_modulo: 1,
-                    id_recurso: 1, // Quadra específica: Quadra 01
-                    id_usuario: 4, // Carlos
+                    id_recurso: 1,
+                    id_usuario: 4,
                     data: formatDate(hoje),
                     horario_desejado: '10:00',
-                    created_at: new Date(hoje.getTime() - 15 * 60000).toISOString(), // 15 min atrás
+                    created_at: new Date(hoje.getTime() - 15 * 60000).toISOString(),
                     status: 'Aguardando',
                     tipo_entrada: 'checkin'
                 },
@@ -388,6 +385,11 @@
                 danger: 'bg-red-100 text-red-700',
                 info: 'bg-blue-100 text-blue-700',
                 purple: 'bg-purple-100 text-purple-700',
+                emerald: 'bg-emerald-100 text-emerald-700',
+                blue: 'bg-blue-100 text-blue-700',
+                amber: 'bg-amber-100 text-amber-700',
+                red: 'bg-red-100 text-red-700',
+                slate: 'bg-slate-200 text-slate-600',
             };
             
             const sizes = {
@@ -429,6 +431,17 @@
             </div>
         );
 
+        const Textarea = ({ label, ...props }) => (
+            <div className="space-y-1.5">
+                {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
+                <textarea 
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all text-slate-800 resize-none"
+                    rows={3}
+                    {...props}
+                />
+            </div>
+        );
+
         const Select = ({ label, options, ...props }) => (
             <div className="space-y-1.5">
                 {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
@@ -443,13 +456,19 @@
             </div>
         );
 
-        const Modal = ({ isOpen, onClose, title, children }) => {
+        const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
             if (!isOpen) return null;
+            
+            const sizes = {
+                sm: 'max-w-sm',
+                md: 'max-w-lg',
+                lg: 'max-w-2xl',
+            };
             
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-modal-in">
+                    <div className={`relative bg-white rounded-2xl shadow-xl w-full ${sizes[size]} max-h-[90vh] overflow-hidden animate-modal-in`}>
                         <div className="flex items-center justify-between p-4 border-b border-slate-100">
                             <h3 className="text-lg font-bold text-slate-800">{title}</h3>
                             <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
@@ -510,6 +529,16 @@
             return <Badge variant={variant}>{label}</Badge>;
         };
 
+        // Badge de Status do Recurso
+        const StatusRecursoBadge = ({ status, size = 'md' }) => {
+            const statusConfig = STATUS_RECURSOS[status] || STATUS_RECURSOS['Livre'];
+            return (
+                <Badge variant={statusConfig.cor} size={size}>
+                    {statusConfig.icone} {statusConfig.label}
+                </Badge>
+            );
+        };
+
         const Notification = ({ message, type, onClose }) => {
             useEffect(() => {
                 const timer = setTimeout(onClose, 3000);
@@ -533,7 +562,6 @@
         // COMPONENTES PRINCIPAIS
         // ============================================
 
-        // HEADER NAVIGATION
         const Header = ({ currentUser, onLogout }) => (
             <header className="bg-white border-b border-slate-100 sticky top-0 z-40">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -564,13 +592,13 @@
             </header>
         );
 
-        // BOTTOM NAVIGATION (MOBILE)
         const BottomNav = ({ currentView, onNavigate, role }) => {
             const navItems = [
                 { id: 'home', icon: '🏠', label: 'Início' },
                 { id: 'reservas', icon: '📅', label: 'Reservas' },
                 { id: 'fila', icon: '⏳', label: 'Fila' },
                 ...(role !== 'Socio' ? [{ id: 'lousa', icon: '📋', label: 'Lousa' }] : []),
+                ...(role !== 'Socio' ? [{ id: 'recursos', icon: '🎯', label: 'Quadras' }] : []),
                 ...(role === 'Admin' ? [{ id: 'config', icon: '⚙️', label: 'Config' }] : []),
             ];
             
@@ -581,13 +609,13 @@
                             <button
                                 key={item.id}
                                 onClick={() => onNavigate(item.id)}
-                                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors ${
+                                className={`flex flex-col items-center gap-1 px-2 py-2 rounded-xl transition-colors ${
                                     currentView === item.id 
                                         ? 'text-teal-600' 
                                         : 'text-slate-400 hover:text-slate-600'
                                 }`}
                             >
-                                <span className="text-xl">{item.icon}</span>
+                                <span className="text-lg">{item.icon}</span>
                                 <span className="text-xs font-medium">{item.label}</span>
                             </button>
                         ))}
@@ -596,7 +624,6 @@
             );
         };
 
-        // TELA DE LOGIN
         const TelaLogin = ({ usuarios, onLogin }) => (
             <div className="min-h-screen bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center p-4">
                 <Card className="w-full max-w-sm p-6">
@@ -629,9 +656,17 @@
             </div>
         );
 
-        // HOME DO SÓCIO
-        const HomeSocio = ({ modulos, onSelectModulo }) => {
+        const HomeSocio = ({ modulos, recursos, onSelectModulo }) => {
             const modulosAtivos = modulos.filter(m => m.status_ativo);
+            
+            // Conta recursos disponíveis (Livre) por módulo
+            const getRecursosDisponiveis = (moduloId) => {
+                return recursos.filter(r => r.id_modulo === moduloId && r.status_operacional === 'Livre').length;
+            };
+            
+            const getTotalRecursos = (moduloId) => {
+                return recursos.filter(r => r.id_modulo === moduloId).length;
+            };
             
             return (
                 <div className="p-4 space-y-4">
@@ -641,22 +676,31 @@
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
-                        {modulosAtivos.map(modulo => (
-                            <Card 
-                                key={modulo.id}
-                                className="p-4 text-center"
-                                onClick={() => onSelectModulo(modulo)}
-                            >
-                                <span className="text-4xl mb-2 block">{modulo.icone}</span>
-                                <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    {modulo.tipo_cobranca === 'Pago' ? `R$ ${modulo.valor_padrao}` : 'Gratuito'}
-                                </p>
-                                {modulo.fila_habilitada && (
-                                    <Badge variant="purple" size="sm">Fila</Badge>
-                                )}
-                            </Card>
-                        ))}
+                        {modulosAtivos.map(modulo => {
+                            const disponiveis = getRecursosDisponiveis(modulo.id);
+                            const total = getTotalRecursos(modulo.id);
+                            
+                            return (
+                                <Card 
+                                    key={modulo.id}
+                                    className="p-4 text-center"
+                                    onClick={() => onSelectModulo(modulo)}
+                                >
+                                    <span className="text-4xl mb-2 block">{modulo.icone}</span>
+                                    <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        {modulo.tipo_cobranca === 'Pago' ? `R$ ${modulo.valor_padrao}` : 'Gratuito'}
+                                    </p>
+                                    <div className="flex items-center justify-center gap-1 mt-2">
+                                        <span className={`inline-block w-2 h-2 rounded-full ${disponiveis > 0 ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse-dot`}></span>
+                                        <span className="text-xs text-slate-500">{disponiveis}/{total} livres</span>
+                                    </div>
+                                    {modulo.fila_habilitada && (
+                                        <Badge variant="purple" size="sm">Fila</Badge>
+                                    )}
+                                </Card>
+                            );
+                        })}
                     </div>
                     
                     {modulosAtivos.length === 0 && (
@@ -664,6 +708,205 @@
                             <p className="text-slate-500">Nenhum módulo disponível no momento.</p>
                         </Card>
                     )}
+                </div>
+            );
+        };
+
+        // TELA DE GESTÃO DE RECURSOS (QUADRAS)
+        const TelaGestaoRecursos = ({ modulos, recursos, onUpdateRecurso }) => {
+            const [moduloSelecionado, setModuloSelecionado] = useState(null);
+            const [recursoEditando, setRecursoEditando] = useState(null);
+            const [novoStatus, setNovoStatus] = useState('');
+            const [motivoStatus, setMotivoStatus] = useState('');
+            
+            const modulosAtivos = modulos.filter(m => m.status_ativo);
+            
+            const recursosExibidos = moduloSelecionado 
+                ? recursos.filter(r => r.id_modulo === moduloSelecionado.id)
+                : recursos.filter(r => modulosAtivos.some(m => m.id === r.id_modulo));
+            
+            const getModulo = (moduloId) => modulos.find(m => m.id === moduloId);
+            
+            // Contagem de status por módulo
+            const getContagemStatus = (moduloId) => {
+                const recursosModulo = recursos.filter(r => r.id_modulo === moduloId);
+                const contagem = {};
+                Object.keys(STATUS_RECURSOS).forEach(status => {
+                    contagem[status] = recursosModulo.filter(r => r.status_operacional === status).length;
+                });
+                return contagem;
+            };
+            
+            const handleAbrirEdicao = (recurso) => {
+                setRecursoEditando(recurso);
+                setNovoStatus(recurso.status_operacional);
+                setMotivoStatus(recurso.motivo_status || '');
+            };
+            
+            const handleSalvarStatus = () => {
+                onUpdateRecurso(recursoEditando.id, {
+                    status_operacional: novoStatus,
+                    motivo_status: ['Reservada', 'Interditada', 'Manutencao'].includes(novoStatus) ? motivoStatus : null
+                });
+                setRecursoEditando(null);
+            };
+            
+            return (
+                <div className="p-4 space-y-4 pb-24">
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">🎯 Gestão de Quadras</h2>
+                        <p className="text-sm text-slate-500">Altere o status dos recursos</p>
+                    </div>
+                    
+                    {/* Filtro por módulo */}
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        <Button 
+                            variant={moduloSelecionado === null ? 'primary' : 'secondary'}
+                            size="sm"
+                            onClick={() => setModuloSelecionado(null)}
+                        >
+                            Todos
+                        </Button>
+                        {modulosAtivos.map(modulo => (
+                            <Button
+                                key={modulo.id}
+                                variant={moduloSelecionado?.id === modulo.id ? 'primary' : 'secondary'}
+                                size="sm"
+                                onClick={() => setModuloSelecionado(modulo)}
+                            >
+                                {modulo.icone} {modulo.nome_categoria}
+                            </Button>
+                        ))}
+                    </div>
+                    
+                    {/* Resumo de Status por Módulo */}
+                    {!moduloSelecionado && (
+                        <div className="grid grid-cols-1 gap-3">
+                            {modulosAtivos.map(modulo => {
+                                const contagem = getContagemStatus(modulo.id);
+                                const total = recursos.filter(r => r.id_modulo === modulo.id).length;
+                                
+                                return (
+                                    <Card key={modulo.id} className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-2xl">{modulo.icone}</span>
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                                    <p className="text-sm text-slate-500">{total} recursos</p>
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="sm" onClick={() => setModuloSelecionado(modulo)}>
+                                                Ver →
+                                            </Button>
+                                        </div>
+                                        
+                                        <div className="flex flex-wrap gap-2">
+                                            {Object.entries(contagem).map(([status, count]) => {
+                                                if (count === 0) return null;
+                                                return (
+                                                    <div key={status} className="flex items-center gap-1">
+                                                        <span>{STATUS_RECURSOS[status].icone}</span>
+                                                        <span className="text-sm text-slate-600">{count}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    )}
+                    
+                    {/* Lista de Recursos */}
+                    {moduloSelecionado && (
+                        <div className="space-y-3">
+                            {recursosExibidos.map(recurso => {
+                                const modulo = getModulo(recurso.id_modulo);
+                                const statusConfig = STATUS_RECURSOS[recurso.status_operacional] || STATUS_RECURSOS['Livre'];
+                                
+                                return (
+                                    <Card key={recurso.id} className="p-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-3 h-3 rounded-full bg-${statusConfig.cor}-500`}></div>
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-800">{recurso.nome_identificador}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <StatusRecursoBadge status={recurso.status_operacional} size="sm" />
+                                                        {recurso.motivo_status && (
+                                                            <span className="text-xs text-slate-500">• {recurso.motivo_status}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <Button variant="secondary" size="sm" onClick={() => handleAbrirEdicao(recurso)}>
+                                                Alterar
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    )}
+                    
+                    {/* Modal de Edição de Status */}
+                    <Modal 
+                        isOpen={!!recursoEditando} 
+                        onClose={() => setRecursoEditando(null)}
+                        title={`Alterar Status - ${recursoEditando?.nome_identificador}`}
+                    >
+                        {recursoEditando && (
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-500">Selecione o novo status:</p>
+                                
+                                <div className="grid grid-cols-2 gap-2">
+                                    {Object.entries(STATUS_RECURSOS).map(([key, config]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setNovoStatus(key)}
+                                            className={`p-3 rounded-xl text-left transition-all border-2 ${
+                                                novoStatus === key 
+                                                    ? `border-${config.cor}-500 bg-${config.cor}-50` 
+                                                    : 'border-transparent bg-slate-50 hover:bg-slate-100'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">{config.icone}</span>
+                                                <div>
+                                                    <p className="font-medium text-slate-800">{config.label}</p>
+                                                    <p className="text-xs text-slate-500">{config.descricao}</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                                
+                                {['Reservada', 'Interditada', 'Manutencao'].includes(novoStatus) && (
+                                    <Textarea 
+                                        label="Motivo (opcional)"
+                                        placeholder={
+                                            novoStatus === 'Reservada' ? 'Ex: Torneio de Verão, Evento corporativo...' :
+                                            novoStatus === 'Interditada' ? 'Ex: Chuva forte, Piso danificado...' :
+                                            'Ex: Troca de rede, Pintura...'
+                                        }
+                                        value={motivoStatus}
+                                        onChange={(e) => setMotivoStatus(e.target.value)}
+                                    />
+                                )}
+                                
+                                <div className="flex gap-2">
+                                    <Button variant="secondary" className="flex-1" onClick={() => setRecursoEditando(null)}>
+                                        Cancelar
+                                    </Button>
+                                    <Button className="flex-1" onClick={handleSalvarStatus}>
+                                        Salvar
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </Modal>
                 </div>
             );
         };
@@ -676,7 +919,9 @@
             const [selectedHorario, setSelectedHorario] = useState(null);
             const [comprovante, setComprovante] = useState(null);
             
-            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Ativo');
+            // Filtra apenas recursos LIVRES
+            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Livre');
+            const recursosIndisponiveis = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional !== 'Livre');
             
             const horariosDisponiveis = selectedRecurso 
                 ? gerarHorariosDisponiveis(modulo, selectedRecurso.id, selectedData, reservas)
@@ -717,7 +962,7 @@
                         </div>
                     </div>
 
-                    {/* Botão de entrar na fila (se habilitado) */}
+                    {/* Botão de entrar na fila */}
                     {modulo.fila_habilitada && (
                         <Card className="p-4 bg-purple-50 border-purple-200">
                             <div className="flex items-center justify-between">
@@ -741,35 +986,70 @@
                     {step === 'recurso' && (
                         <div className="space-y-3">
                             <h3 className="font-semibold text-slate-700">Escolha o local:</h3>
-                            {recursosDoModulo.map(recurso => (
-                                <Card 
-                                    key={recurso.id}
-                                    className={`p-4 border-2 transition-all ${selectedRecurso?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent'}`}
-                                    onClick={() => setSelectedRecurso(recurso)}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="font-semibold text-slate-800">{recurso.nome_identificador}</h4>
-                                            <p className="text-sm text-slate-500">Capacidade: {recurso.capacidade} pessoas</p>
-                                        </div>
-                                        {selectedRecurso?.id === recurso.id && (
-                                            <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
-                                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Card>
-                            ))}
                             
-                            <Button 
-                                className="w-full mt-4" 
-                                disabled={!selectedRecurso}
-                                onClick={() => setStep('data')}
-                            >
-                                Continuar
-                            </Button>
+                            {recursosDoModulo.length === 0 ? (
+                                <Card className="p-6 text-center bg-amber-50">
+                                    <p className="text-amber-700">Nenhum recurso disponível no momento.</p>
+                                    {modulo.fila_habilitada && (
+                                        <Button variant="purple" size="sm" className="mt-3" onClick={() => onEntrarFila(modulo)}>
+                                            Entrar na Fila de Espera
+                                        </Button>
+                                    )}
+                                </Card>
+                            ) : (
+                                recursosDoModulo.map(recurso => (
+                                    <Card 
+                                        key={recurso.id}
+                                        className={`p-4 border-2 transition-all ${selectedRecurso?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent'}`}
+                                        onClick={() => setSelectedRecurso(recurso)}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-semibold text-slate-800">{recurso.nome_identificador}</h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <StatusRecursoBadge status={recurso.status_operacional} size="sm" />
+                                                    <span className="text-sm text-slate-500">• {recurso.capacidade} pessoas</span>
+                                                </div>
+                                            </div>
+                                            {selectedRecurso?.id === recurso.id && (
+                                                <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Card>
+                                ))
+                            )}
+                            
+                            {/* Mostrar recursos indisponíveis */}
+                            {recursosIndisponiveis.length > 0 && (
+                                <div className="pt-4 border-t border-slate-100">
+                                    <p className="text-sm text-slate-500 mb-2">Indisponíveis no momento:</p>
+                                    {recursosIndisponiveis.map(recurso => (
+                                        <div key={recurso.id} className="p-3 bg-slate-50 rounded-xl mb-2 opacity-60">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-600">{recurso.nome_identificador}</span>
+                                                <StatusRecursoBadge status={recurso.status_operacional} size="sm" />
+                                            </div>
+                                            {recurso.motivo_status && (
+                                                <p className="text-xs text-slate-400 mt-1">{recurso.motivo_status}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {recursosDoModulo.length > 0 && (
+                                <Button 
+                                    className="w-full mt-4" 
+                                    disabled={!selectedRecurso}
+                                    onClick={() => setStep('data')}
+                                >
+                                    Continuar
+                                </Button>
+                            )}
                         </div>
                     )}
                     
@@ -841,7 +1121,7 @@
                         </div>
                     )}
                     
-                    {/* STEP 4: PAGAMENTO (APENAS PARA PAGOS) */}
+                    {/* STEP 4: PAGAMENTO */}
                     {step === 'pagamento' && (
                         <div className="space-y-4">
                             <h3 className="font-semibold text-slate-700">Pagamento via PIX:</h3>
@@ -944,14 +1224,13 @@
 
         // TELA DE ENTRAR NA FILA
         const TelaEntrarFila = ({ modulo, recursos, currentUser, filaEspera, onEntrar, onVoltar }) => {
-            const [tipoEspera, setTipoEspera] = useState('qualquer'); // 'qualquer' ou 'especifica'
+            const [tipoEspera, setTipoEspera] = useState('qualquer');
             const [selectedRecurso, setSelectedRecurso] = useState(null);
             const [selectedData, setSelectedData] = useState(formatDate(new Date()));
             const [selectedHorario, setSelectedHorario] = useState(null);
             
-            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Ativo');
+            const recursosDoModulo = recursos.filter(r => r.id_modulo === modulo.id && r.status_operacional === 'Livre');
             
-            // Gera horários de hora cheia e meia hora para a fila
             const gerarHorariosFila = () => {
                 const horarios = [];
                 for (let h = 6; h < 22; h++) {
@@ -961,7 +1240,6 @@
                 return horarios;
             };
             
-            // Verifica se usuário já está na fila para este horário
             const jaEstaNaFila = filaEspera.some(f => 
                 f.id_usuario === currentUser.id && 
                 f.id_modulo === modulo.id &&
@@ -1014,7 +1292,6 @@
                         </p>
                     </Card>
                     
-                    {/* Tipo de espera */}
                     <div className="space-y-3">
                         <h3 className="font-semibold text-slate-700">O que você prefere?</h3>
                         
@@ -1027,7 +1304,7 @@
                                     {tipoEspera === 'qualquer' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-slate-800">Qualquer {modulo.nome_categoria === 'Tênis' ? 'quadra' : 'local'}</p>
+                                    <p className="font-semibold text-slate-800">Qualquer disponível</p>
                                     <p className="text-sm text-slate-500">Primeira que vagar</p>
                                 </div>
                             </div>
@@ -1042,14 +1319,13 @@
                                     {tipoEspera === 'especifica' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-slate-800">{modulo.nome_categoria === 'Tênis' ? 'Quadra' : 'Local'} específica</p>
+                                    <p className="font-semibold text-slate-800">Específica</p>
                                     <p className="text-sm text-slate-500">Escolher qual prefiro</p>
                                 </div>
                             </div>
                         </Card>
                     </div>
                     
-                    {/* Seleção de quadra específica */}
                     {tipoEspera === 'especifica' && (
                         <div className="space-y-2">
                             <h4 className="text-sm font-medium text-slate-700">Escolha:</h4>
@@ -1071,7 +1347,6 @@
                         </div>
                     )}
                     
-                    {/* Data */}
                     {modulo.tipo_fila === 'agendamento' && (
                         <div className="space-y-2">
                             <h4 className="text-sm font-medium text-slate-700">Data:</h4>
@@ -1084,7 +1359,6 @@
                         </div>
                     )}
                     
-                    {/* Horário desejado */}
                     <div className="space-y-2">
                         <h4 className="text-sm font-medium text-slate-700">Horário desejado:</h4>
                         <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
@@ -1122,7 +1396,7 @@
             );
         };
 
-        // TELA DE FILA DE ESPERA (VISUALIZAÇÃO)
+        // TELA DE FILA DE ESPERA
         const TelaFilaEspera = ({ 
             modulos, 
             recursos, 
@@ -1134,22 +1408,18 @@
             onAtribuirDaFila 
         }) => {
             const [showModalAdicionar, setShowModalAdicionar] = useState(false);
-            const [moduloSelecionado, setModuloSelecionado] = useState(null);
             
             const isStaff = currentUser.role === 'Admin' || currentUser.role === 'Funcionario';
             const modulosComFila = modulos.filter(m => m.status_ativo && m.fila_habilitada);
             const hoje = formatDate(new Date());
             
-            // Filtra filas do usuário ou todas se for funcionário
             const filasVisiveis = isStaff 
                 ? filaEspera.filter(f => f.status === 'Aguardando')
                 : filaEspera.filter(f => f.id_usuario === currentUser.id);
             
             const getUsuario = (id) => usuarios.find(u => u.id === id);
             const getRecurso = (id) => recursos.find(r => r.id === id);
-            const getModulo = (id) => modulos.find(m => m.id === id);
             
-            // Agrupa fila por módulo
             const filasPorModulo = modulosComFila.map(modulo => ({
                 modulo,
                 filas: filasVisiveis.filter(f => f.id_modulo === modulo.id).sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -1258,7 +1528,6 @@
                         </Card>
                     ))}
                     
-                    {/* Modal para funcionário adicionar pessoa na fila */}
                     <Modal isOpen={showModalAdicionar} onClose={() => setShowModalAdicionar(false)} title="Adicionar à Fila">
                         <ModalAdicionarFila 
                             modulos={modulosComFila}
@@ -1271,7 +1540,6 @@
             );
         };
 
-        // Modal para adicionar pessoa na fila (funcionário/admin)
         const ModalAdicionarFila = ({ modulos, recursos, usuarios, onAdicionar }) => {
             const [selectedModulo, setSelectedModulo] = useState(null);
             const [selectedUsuario, setSelectedUsuario] = useState(null);
@@ -1281,7 +1549,7 @@
             const [selectedData, setSelectedData] = useState(formatDate(new Date()));
             
             const recursosDoModulo = selectedModulo 
-                ? recursos.filter(r => r.id_modulo === selectedModulo.id && r.status_operacional === 'Ativo')
+                ? recursos.filter(r => r.id_modulo === selectedModulo.id && r.status_operacional === 'Livre')
                 : [];
             
             const gerarHorariosFila = () => {
@@ -1494,7 +1762,7 @@
             );
         };
 
-        // LOUSA DIGITAL (FUNCIONÁRIO/ADMIN)
+        // LOUSA DIGITAL
         const LousaDigital = ({ 
             reservas, 
             recursos, 
@@ -1527,10 +1795,8 @@
                 ? recursos.filter(r => r.id_modulo === moduloSelecionado.id)
                 : recursos.filter(r => modulosAtivos.some(m => m.id === r.id_modulo));
             
-            // Fila de espera do dia
             const filaHoje = filaEspera.filter(f => f.data === hoje && f.status === 'Aguardando');
             
-            // Obtém próximo da fila para um recurso específico ou qualquer recurso do módulo
             const getProximosDaFila = (recurso) => {
                 const modulo = modulos.find(m => m.id === recurso.id_modulo);
                 if (!modulo?.fila_habilitada) return [];
@@ -1538,7 +1804,6 @@
                 return filaHoje
                     .filter(f => f.id_modulo === recurso.id_modulo && (f.id_recurso === null || f.id_recurso === recurso.id))
                     .sort((a, b) => {
-                        // Prioridade: 1º quem pediu recurso específico, 2º ordem de chegada
                         if (a.id_recurso === recurso.id && b.id_recurso !== recurso.id) return -1;
                         if (b.id_recurso === recurso.id && a.id_recurso !== recurso.id) return 1;
                         return new Date(a.created_at) - new Date(b.created_at);
@@ -1557,7 +1822,6 @@
                         <Badge variant="info">{formatDateBR(hoje)}</Badge>
                     </div>
                     
-                    {/* Filtro por módulo */}
                     <div className="flex gap-2 overflow-x-auto pb-2">
                         <Button 
                             variant={moduloSelecionado === null ? 'primary' : 'secondary'}
@@ -1578,7 +1842,6 @@
                         ))}
                     </div>
                     
-                    {/* Resumo da fila */}
                     {filaHoje.length > 0 && (
                         <Card className="p-3 bg-purple-50 border-purple-200">
                             <div className="flex items-center justify-between">
@@ -1591,29 +1854,28 @@
                         </Card>
                     )}
                     
-                    {/* Grid de Recursos */}
                     <div className="space-y-4">
                         {recursosExibidos.map(recurso => {
                             const modulo = modulos.find(m => m.id === recurso.id_modulo);
                             const reservasRecurso = getReservasDoRecurso(recurso.id);
                             const reservaAtual = reservasRecurso[0];
                             const proximosFila = getProximosDaFila(recurso);
+                            const statusConfig = STATUS_RECURSOS[recurso.status_operacional] || STATUS_RECURSOS['Livre'];
+                            const podeReservar = recurso.status_operacional === 'Livre';
                             
                             return (
-                                <Card key={recurso.id} className={`p-4 ${recurso.status_operacional === 'Manutencao' ? 'opacity-50' : ''}`}>
+                                <Card key={recurso.id} className={`p-4 ${!podeReservar ? 'opacity-70' : ''}`}>
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xl">{modulo?.icone}</span>
                                             <div>
                                                 <h3 className="font-semibold text-slate-800">{recurso.nome_identificador}</h3>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge 
-                                                        variant={recurso.status_operacional === 'Ativo' ? 'success' : 'warning'}
-                                                        size="sm"
-                                                    >
-                                                        {recurso.status_operacional}
-                                                    </Badge>
-                                                    {proximosFila.length > 0 && (
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <StatusRecursoBadge status={recurso.status_operacional} size="sm" />
+                                                    {recurso.motivo_status && (
+                                                        <span className="text-xs text-slate-500">{recurso.motivo_status}</span>
+                                                    )}
+                                                    {proximosFila.length > 0 && podeReservar && (
                                                         <Badge variant="purple" size="sm">
                                                             {proximosFila.length} na fila
                                                         </Badge>
@@ -1622,14 +1884,22 @@
                                             </div>
                                         </div>
                                         
-                                        {modulo?.fila_habilitada && (
+                                        {modulo?.fila_habilitada && podeReservar && (
                                             <Button variant="ghost" size="sm" onClick={() => handleAbrirFila(recurso)}>
                                                 ⏳
                                             </Button>
                                         )}
                                     </div>
                                     
-                                    {reservaAtual ? (
+                                    {!podeReservar ? (
+                                        <div className={`text-center py-4 rounded-xl bg-${statusConfig.cor}-50`}>
+                                            <p className="text-lg">{statusConfig.icone}</p>
+                                            <p className={`text-sm text-${statusConfig.cor}-700`}>{statusConfig.label}</p>
+                                            {recurso.motivo_status && (
+                                                <p className="text-xs text-slate-500 mt-1">{recurso.motivo_status}</p>
+                                            )}
+                                        </div>
+                                    ) : reservaAtual ? (
                                         <div className="space-y-3">
                                             <div className="bg-slate-50 p-3 rounded-xl">
                                                 <div className="flex items-center justify-between mb-2">
@@ -1710,7 +1980,6 @@
                         })}
                     </div>
                     
-                    {/* Modal de Fila do Recurso */}
                     <Modal 
                         isOpen={showModalFila} 
                         onClose={() => setShowModalFila(false)} 
@@ -1757,8 +2026,8 @@
             );
         };
 
-        // PAINEL DE CONFIGURAÇÕES (ADMIN)
-        const PainelConfig = ({ config, modulos, usuarios, onUpdateConfig, onUpdateModulo }) => {
+        // PAINEL DE CONFIGURAÇÕES
+        const PainelConfig = ({ config, modulos, recursos, usuarios, onUpdateConfig, onUpdateModulo }) => {
             const [activeTab, setActiveTab] = useState('modulos');
             const [editingModulo, setEditingModulo] = useState(null);
             const [masterPassword, setMasterPassword] = useState('');
@@ -1793,6 +2062,9 @@
                 );
             }
             
+            // Contagem de recursos por módulo
+            const getRecursosPorModulo = (moduloId) => recursos.filter(r => r.id_modulo === moduloId);
+            
             return (
                 <div className="p-4 space-y-4 pb-24">
                     <h2 className="text-xl font-bold text-slate-800">Configurações</h2>
@@ -1813,39 +2085,58 @@
                         <div className="space-y-4">
                             <p className="text-sm text-slate-500">Ative/desative módulos e configure regras de uso.</p>
                             
-                            {modulos.map(modulo => (
-                                <Card key={modulo.id} className="p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-2xl">{modulo.icone}</span>
-                                            <div>
-                                                <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
-                                                <div className="flex gap-1">
-                                                    <Badge variant={modulo.tipo_cobranca === 'Pago' ? 'warning' : 'default'} size="sm">
-                                                        {modulo.tipo_cobranca}
-                                                    </Badge>
-                                                    {modulo.fila_habilitada && (
-                                                        <Badge variant="purple" size="sm">Fila</Badge>
-                                                    )}
+                            {modulos.map(modulo => {
+                                const recursosModulo = getRecursosPorModulo(modulo.id);
+                                const livres = recursosModulo.filter(r => r.status_operacional === 'Livre').length;
+                                
+                                return (
+                                    <Card key={modulo.id} className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{modulo.icone}</span>
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-800">{modulo.nome_categoria}</h3>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant={modulo.tipo_cobranca === 'Pago' ? 'warning' : 'default'} size="sm">
+                                                            {modulo.tipo_cobranca}
+                                                        </Badge>
+                                                        <span className="text-xs text-slate-500">
+                                                            {recursosModulo.length} recursos ({livres} livres)
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <Toggle 
+                                                checked={modulo.status_ativo}
+                                                onChange={(checked) => onUpdateModulo(modulo.id, { status_ativo: checked })}
+                                            />
                                         </div>
-                                        <Toggle 
-                                            checked={modulo.status_ativo}
-                                            onChange={(checked) => onUpdateModulo(modulo.id, { status_ativo: checked })}
-                                        />
-                                    </div>
-                                    
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="w-full"
-                                        onClick={() => setEditingModulo(modulo)}
-                                    >
-                                        ⚙️ Editar Regras
-                                    </Button>
-                                </Card>
-                            ))}
+                                        
+                                        {/* Mini resumo de status */}
+                                        <div className="flex gap-2 mb-3 flex-wrap">
+                                            {Object.entries(STATUS_RECURSOS).map(([status, config]) => {
+                                                const count = recursosModulo.filter(r => r.status_operacional === status).length;
+                                                if (count === 0) return null;
+                                                return (
+                                                    <div key={status} className="flex items-center gap-1 text-xs text-slate-500">
+                                                        <span>{config.icone}</span>
+                                                        <span>{count}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="w-full"
+                                            onClick={() => setEditingModulo(modulo)}
+                                        >
+                                            ⚙️ Editar Regras
+                                        </Button>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     )}
                     
@@ -1896,13 +2187,6 @@
                                                 onChange={(e) => onUpdateModulo(modulo.id, { antecedencia_fila_minutos: parseInt(e.target.value) || 0 })}
                                                 min="0"
                                             />
-                                            
-                                            <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg">
-                                                {modulo.tipo_fila === 'checkin' 
-                                                    ? `Sócio deve fazer check-in até ${modulo.antecedencia_fila_minutos} min antes do horário desejado.`
-                                                    : `Sócio pode agendar posição na fila com até ${modulo.antecedencia_fila_minutos} min de antecedência.`
-                                                }
-                                            </div>
                                         </div>
                                     )}
                                 </Card>
@@ -2046,14 +2330,11 @@
         // APP PRINCIPAL
         // ============================================
         const App = () => {
-            // Estados
             const [currentUser, setCurrentUser] = useState(null);
             const [currentView, setCurrentView] = useState('home');
             const [selectedModulo, setSelectedModulo] = useState(null);
-            const [showFilaModal, setShowFilaModal] = useState(false);
             const [moduloParaFila, setModuloParaFila] = useState(null);
             
-            // Dados
             const [config, setConfig] = useState(initialConfigGlobal);
             const [modulos, setModulos] = useState(initialModulos);
             const [recursos, setRecursos] = useState(initialRecursos);
@@ -2061,14 +2342,12 @@
             const [reservas, setReservas] = useState(generateInitialReservas);
             const [filaEspera, setFilaEspera] = useState(generateInitialFilaEspera);
             
-            // Notificações
             const [notification, setNotification] = useState(null);
             
             const showNotification = (message, type = 'success') => {
                 setNotification({ message, type });
             };
             
-            // Handlers
             const handleLogin = (user) => {
                 setCurrentUser(user);
                 setCurrentView('home');
@@ -2141,7 +2420,13 @@
                 ));
             };
             
-            // Handlers de Fila
+            const handleUpdateRecurso = (recursoId, updates) => {
+                setRecursos(recursos.map(r => 
+                    r.id === recursoId ? {...r, ...updates} : r
+                ));
+                showNotification('Status atualizado!');
+            };
+            
             const handleEntrarFila = (modulo) => {
                 setModuloParaFila(modulo);
             };
@@ -2168,20 +2453,18 @@
             const handleAtribuirDaFila = (fila, recurso) => {
                 const modulo = modulos.find(m => m.id === fila.id_modulo);
                 const recursoAtribuido = recurso || recursos.find(r => r.id === fila.id_recurso) || 
-                    recursos.find(r => r.id_modulo === fila.id_modulo && r.status_operacional === 'Ativo');
+                    recursos.find(r => r.id_modulo === fila.id_modulo && r.status_operacional === 'Livre');
                 
                 if (!recursoAtribuido) {
                     showNotification('Nenhum recurso disponível!', 'error');
                     return;
                 }
                 
-                // Calcula hora fim
                 const duracao = typeof modulo.unidade_tempo === 'number' ? modulo.unidade_tempo : 60;
                 const [h, m] = fila.horario_desejado.split(':').map(Number);
                 const fimMinutos = h * 60 + m + duracao;
                 const horaFim = `${String(Math.floor(fimMinutos / 60)).padStart(2, '0')}:${String(fimMinutos % 60).padStart(2, '0')}`;
                 
-                // Cria reserva
                 const novaReserva = {
                     id: Date.now(),
                     id_recurso: recursoAtribuido.id,
@@ -2202,7 +2485,6 @@
                 showNotification(`Reserva criada para ${usuarios.find(u => u.id === fila.id_usuario)?.nome}!`);
             };
             
-            // Renderização
             if (!currentUser) {
                 return <TelaLogin usuarios={usuarios} onLogin={handleLogin} />;
             }
@@ -2212,12 +2494,10 @@
                     <Header currentUser={currentUser} onLogout={handleLogout} />
                     
                     <main className="max-w-7xl mx-auto pb-20">
-                        {/* Home */}
                         {currentView === 'home' && !selectedModulo && !moduloParaFila && (
-                            <HomeSocio modulos={modulos} onSelectModulo={handleSelectModulo} />
+                            <HomeSocio modulos={modulos} recursos={recursos} onSelectModulo={handleSelectModulo} />
                         )}
                         
-                        {/* Reservar Recurso */}
                         {currentView === 'home' && selectedModulo && !moduloParaFila && (
                             <ReservaRecurso 
                                 modulo={selectedModulo}
@@ -2230,7 +2510,6 @@
                             />
                         )}
                         
-                        {/* Entrar na Fila */}
                         {moduloParaFila && (
                             <TelaEntrarFila 
                                 modulo={moduloParaFila}
@@ -2242,7 +2521,6 @@
                             />
                         )}
                         
-                        {/* Minhas Reservas */}
                         {currentView === 'reservas' && (
                             <MinhasReservas 
                                 reservas={reservas}
@@ -2253,7 +2531,6 @@
                             />
                         )}
                         
-                        {/* Fila de Espera */}
                         {currentView === 'fila' && (
                             <TelaFilaEspera 
                                 modulos={modulos}
@@ -2267,7 +2544,14 @@
                             />
                         )}
                         
-                        {/* Lousa Digital */}
+                        {currentView === 'recursos' && (currentUser.role === 'Admin' || currentUser.role === 'Funcionario') && (
+                            <TelaGestaoRecursos 
+                                modulos={modulos}
+                                recursos={recursos}
+                                onUpdateRecurso={handleUpdateRecurso}
+                            />
+                        )}
+                        
                         {currentView === 'lousa' && (currentUser.role === 'Admin' || currentUser.role === 'Funcionario') && (
                             <LousaDigital 
                                 reservas={reservas}
@@ -2282,11 +2566,11 @@
                             />
                         )}
                         
-                        {/* Configurações */}
                         {currentView === 'config' && currentUser.role === 'Admin' && (
                             <PainelConfig 
                                 config={config}
                                 modulos={modulos}
+                                recursos={recursos}
                                 usuarios={usuarios}
                                 onUpdateConfig={handleUpdateConfig}
                                 onUpdateModulo={handleUpdateModulo}
@@ -2311,7 +2595,6 @@
             );
         };
 
-        // Renderiza o App
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
