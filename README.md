@@ -1,113 +1,197 @@
-# 🏆 Clube Gestor 360
+# 🎾 Clube Gestor 360
 
-Sistema completo de gestão modular para clubes e complexos de lazer.
+<div align="center">
 
-## 🌐 Demo Online
+![Version](https://img.shields.io/badge/version-8.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC.svg?logo=tailwind-css)
 
-**[Acessar Sistema](https://SEU_USUARIO.github.io/clube-gestor-360/)**
+**Sistema completo de gestão para clubes esportivos**
 
-> Substitua `SEU_USUARIO` pelo seu username do GitHub após fazer o deploy.
+[Demo](#-demo) • [Funcionalidades](#-funcionalidades) • [Instalação](#-instalação) • [Uso](#-como-usar) • [Contribuir](#-contribuindo)
+
+</div>
 
 ---
+
+## 📸 Screenshots
+
+<div align="center">
+<table>
+<tr>
+<td align="center"><b>Home</b></td>
+<td align="center"><b>Lousa Digital</b></td>
+<td align="center"><b>Reserva</b></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/home.png" width="200"/></td>
+<td><img src="docs/screenshots/lousa.png" width="200"/></td>
+<td><img src="docs/screenshots/reserva.png" width="200"/></td>
+</tr>
+</table>
+</div>
 
 ## ✨ Funcionalidades
 
-### 👤 Perfil Sócio
-- Home dinâmica com módulos ativos
-- Reserva de quadras esportivas (gratuito)
-- Reserva de quiosques/salões com pagamento PIX
-- Upload de comprovante de pagamento
-- Histórico de reservas
-- Cancelamento dentro da janela permitida
+### 👤 Para Sócios
+- ✅ Login com matrícula (escalável)
+- ✅ Visualização de quadras disponíveis em tempo real
+- ✅ Reserva de recursos (Tênis, Beach Tennis, Futebol, etc)
+- ✅ Fila de espera (check-in ou agendamento)
+- ✅ Histórico de reservas
+- ✅ Pagamento via PIX com upload de comprovante
 
-### 👷 Perfil Funcionário  
-- Lousa Digital com visão geral do dia
-- Confirmar presença de sócios
-- Registrar no-show
-- Aprovar pagamentos PIX
-- Progress bar em tempo real
+### 👨‍💼 Para Funcionários
+- ✅ Lousa Digital - controle em tempo real
+- ✅ Timer com aquecimento (5min) + jogo (60min)
+- ✅ Estender reserva (+1 hora)
+- ✅ Encerrar reserva antecipadamente
+- ✅ Registro de No-Show
+- ✅ Gestão de sócios (bloqueio/desbloqueio)
 
-### ⚙️ Perfil Admin
-- Ativar/desativar módulos
-- Configurar regras por categoria:
-  - Tipo de cobrança (Gratuito/Pago)
-  - Valor padrão
-  - Tempo de uso
-  - Antecedência máxima para reservas
-  - Janela de cancelamento
-- Configurar limite de no-shows
-- Configurar dias de bloqueio por punição
-- **Senha master: `1234`**
+### ⚙️ Para Administradores
+- ✅ Gestão de quadras/recursos (CRUD completo)
+- ✅ Programação de aulas (professor, dias, horários)
+- ✅ Configuração de módulos (preço, duração, etc)
+- ✅ Gestão de usuários
+- ✅ Configurações do clube (PIX, punições, etc)
 
----
+## 🚀 Demo
 
-## 🎯 Módulos Disponíveis
+**[Acesse a Demo Online](https://seuusuario.github.io/clube-gestor-360)**
 
-| Módulo | Tipo | Valor | Tempo |
-|--------|------|-------|-------|
-| 🎾 Tênis | Gratuito | - | 60 min |
-| ⚽ Futebol | Gratuito | - | 90 min |
-| 🏠 Quiosque | Pago | R$ 350 | Diária |
-| 🎉 Salão de Festas | Pago | R$ 800 | Diária |
-| 🏊 Piscina | Inativo | - | - |
-| 🏋️ Academia | Inativo | - | - |
+### Usuários de Teste
 
----
+| Matrícula | Senha | Perfil |
+|-----------|-------|--------|
+| `ADM001` | `1234` | Administrador |
+| `FUNC001` | `1234` | Funcionário |
+| `SOC001` | `1234` | Sócio |
 
-## 🚀 Como Usar
+## 📦 Instalação
 
-### GitHub Pages (Recomendado)
-
-1. Faça **Fork** deste repositório
-2. Vá em **Settings** → **Pages**
-3. Em **Source**, selecione `main` branch
-4. Aguarde 1-2 minutos
-5. Acesse `https://seu-usuario.github.io/clube-gestor-360/`
-
-### Localmente
+### Opção 1: Uso direto (sem instalação)
 
 1. Baixe o arquivo `index.html`
 2. Abra no navegador
+3. Pronto! 🎉
+
+### Opção 2: Via Git
+
+```bash
+git clone https://github.com/seuusuario/clube-gestor-360.git
+cd clube-gestor-360
+# Abra index.html no navegador
+```
+
+### Opção 3: GitHub Pages
+
+1. Fork este repositório
+2. Vá em Settings → Pages
+3. Selecione branch `main` e pasta `/root`
+4. Acesse `https://seuusuario.github.io/clube-gestor-360`
+
+## 🎯 Como Usar
+
+### Fluxo do Sócio
+```
+Login → Selecionar Módulo → Escolher Quadra → Data → Horário → Confirmar
+```
+
+### Fluxo do Funcionário (Lousa Digital)
+```
+1. Sócio chega → Funcionário vê reserva na Lousa
+2. Clica START → Timer inicia (5min aquecimento + 60min jogo)
+3. Timer amarelo → Aquecimento
+4. Timer verde → Em jogo
+5. Timer vermelho → Últimos 5 minutos
+6. +1h → Estende | Encerrar → Finaliza
+```
+
+## 🏗️ Estrutura do Projeto
+
+```
+clube-gestor-360/
+├── index.html          # 🎯 Aplicação completa (arquivo único)
+├── README.md           # 📖 Documentação
+├── LICENSE             # 📄 Licença MIT
+├── .gitignore          # 🚫 Arquivos ignorados
+├── src/                # 📁 Código fonte separado (referência)
+│   ├── css/
+│   │   └── styles.css  # 🎨 Estilos
+│   └── js/
+│       ├── config.js   # ⚙️ Configurações
+│       ├── utils.js    # 🛠️ Utilitários
+│       ├── components.jsx  # 🧩 Componentes
+│       └── screens.jsx # 📱 Telas
+└── docs/               # 📚 Documentação adicional
+    └── screenshots/    # 📸 Capturas de tela
+```
+
+## ⚙️ Configuração
+
+### Tempos (em `index.html`)
+```javascript
+const TEMPO_AQUECIMENTO = 5;   // minutos
+const TEMPO_EXTENSAO = 60;     // minutos (+1 hora)
+```
+
+### Dados Iniciais
+Edite os arrays no início do arquivo:
+- `initialModulos` - Módulos (Tênis, Futebol, etc)
+- `initialRecursos` - Quadras e recursos
+- `initialAulas` - Aulas programadas
+- `initialUsuarios` - Usuários do sistema
+
+## 🎨 Status dos Recursos
+
+| Status | Cor | Descrição |
+|--------|-----|-----------|
+| 🟢 Livre | Verde | Disponível |
+| 🔵 Ocupada | Azul | Em uso |
+| 🟡 Manutenção | Amarelo | Em reparo |
+| 🟣 Reservada | Roxo | Aula/Evento |
+| 🔴 Interditada | Vermelho | Imprópria |
+| ⚪ Limpeza | Cinza | Em limpeza |
+
+## 🛠️ Tecnologias
+
+- **React 18** - Interface reativa
+- **Tailwind CSS 3** - Estilização
+- **Babel Standalone** - Compilação JSX no browser
+- **PWA Ready** - Funciona offline
+
+## 🤝 Contribuindo
+
+1. Fork o projeto
+2. Crie sua branch (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'Add: nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
+
+## 📝 Roadmap
+
+- [ ] Notificações push
+- [ ] Integração com WhatsApp
+- [ ] Relatórios e dashboards
+- [ ] App mobile nativo
+- [ ] Backend com banco de dados
+- [ ] Sistema de torneios
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 👨‍💻 Autor
+
+**Seu Nome**
+- GitHub: [@seuusuario](https://github.com/seuusuario)
 
 ---
 
-## 👥 Usuários Demo
+<div align="center">
 
-| Nome | Matrícula | Perfil | No-Shows |
-|------|-----------|--------|----------|
-| Admin Master | ADM001 | Admin | 0 |
-| João Recepção | FUNC001 | Funcionário | 0 |
-| Maria Silva | SOC001 | Sócio | 0 |
-| Carlos Santos | SOC002 | Sócio | 2 |
-| Ana Oliveira | SOC003 | Sócio | 0 |
+⭐ **Se este projeto te ajudou, deixe uma estrela!** ⭐
 
----
-
-## 🛠️ Stack Técnica
-
-- **React 18** (via CDN)
-- **Tailwind CSS** (via CDN)
-- **Babel** (para JSX standalone)
-- **PWA Ready** (meta tags configuradas)
-- **Mobile-First Design**
-
----
-
-## 📱 PWA
-
-O sistema está preparado para funcionar como Progressive Web App:
-- Meta tags para instalação
-- Theme color configurado
-- Viewport otimizado para mobile
-- Safe area para notch
-
----
-
-## 🎨 Design System
-
-- **Font**: Nunito Sans
-- **Primary Color**: Teal (#0F766E)
-- **Componentes**: Cards, Buttons, Badges, Modals, Toggles
-- **Animações**: Suaves e profissionais
-
----
+</div>

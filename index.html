@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Clube Gestor 360 - Sistema de Gestão Modular</title>
+    <title>Clube Gestor 360 v8</title>
     <meta name="theme-color" content="#0F766E">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -77,7 +77,7 @@
         ];
 
         // =============================================
-        // DADOS INICIAIS
+        // DADOS INICIAIS (SEUS DADOS PRESERVADOS)
         // =============================================
         const initialConfig = {
             nome_clube: 'Clube Esportivo Horizonte',
@@ -170,15 +170,8 @@
         const addDays = (date, days) => { const r = new Date(date); r.setDate(r.getDate() + days); return r; };
 
         const temConflitoHorario = (h1Inicio, h1Fim, h2Inicio, h2Fim) => {
-            const [i1H, i1M] = h1Inicio.split(':').map(Number);
-            const [f1H, f1M] = h1Fim.split(':').map(Number);
-            const [i2H, i2M] = h2Inicio.split(':').map(Number);
-            const [f2H, f2M] = h2Fim.split(':').map(Number);
-            const minI1 = i1H * 60 + i1M;
-            const minF1 = f1H * 60 + f1M;
-            const minI2 = i2H * 60 + i2M;
-            const minF2 = f2H * 60 + f2M;
-            return (minI1 < minF2 && minF1 > minI2);
+            const toMin = (s) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
+            return toMin(h1Inicio) < toMin(h2Fim) && toMin(h1Fim) > toMin(h2Inicio);
         };
         
         const formatDiasSemana = (dias) => {
@@ -188,14 +181,25 @@
             return dias.sort().map(d => DIAS_SEMANA.find(ds => ds.id === d)?.curto).join(', ');
         };
 
+        // *** FUNÇÕES CORRIGIDAS PARA AULAS ***
+        const getAulaAgora = (recurso, aulas) => {
+            const horaAtual = getHoraAtualExata();
+            const diaSemana = new Date().getDay();
+            return aulas.find(a => a.recursoId === recurso.id && a.status === 'ativo' && a.diasSemana.includes(diaSemana) && a.horaInicio <= horaAtual && a.horaFim > horaAtual);
+        };
+
+        const getAulasHoje = (recursoId, aulas) => {
+            const diaSemana = new Date().getDay();
+            return aulas.filter(a => a.recursoId === recursoId && a.status === 'ativo' && a.diasSemana.includes(diaSemana));
+        };
+
         const getStatusEmTempoReal = (recurso, aulas, reservas) => {
             if (['Manutencao', 'Interditada', 'Limpeza'].includes(recurso.status)) {
                 return { status: recurso.status, motivo: recurso.motivo };
             }
-            const horaAtual = getHoraAtualExata();
-            const diaSemana = new Date().getDay();
-            const aulaAgora = aulas.find(a => a.recursoId === recurso.id && a.status === 'ativo' && a.diasSemana.includes(diaSemana) && a.horaInicio <= horaAtual && a.horaFim > horaAtual);
+            const aulaAgora = getAulaAgora(recurso, aulas);
             if (aulaAgora) return { status: 'Reservada', motivo: `Aula: ${aulaAgora.nome} (${aulaAgora.professor})` };
+            const horaAtual = getHoraAtualExata();
             const reservaAgora = reservas.find(r => r.recursoId === recurso.id && ['Em Andamento', 'Confirmada'].includes(r.status) && r.data === hoje() && r.horaInicio <= horaAtual && r.horaFim > horaAtual);
             if (reservaAgora) return { status: 'Ocupada', motivo: 'Em uso' };
             return { status: 'Livre', motivo: null };
@@ -253,7 +257,7 @@
             <div className="space-y-1.5">
                 {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
                 <select className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none transition-all text-slate-800 bg-white" {...props}>
-                    {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    {options.map(opt => <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>)}
                 </select>
             </div>
         );
@@ -339,7 +343,7 @@
         const BottomNav = ({ view, onNavigate, role }) => {
             const items = [
                 { id: 'home', icon: '🏠', label: 'Início' },
-                { id: 'reservas', icon: '📅', label: 'Minhas Reservas' },
+                { id: 'reservas', icon: '📅', label: 'Reservas' },
                 { id: 'fila', icon: '⏳', label: 'Fila' },
                 ...(role !== 'Socio' ? [{ id: 'lousa', icon: '📋', label: 'Lousa' }] : []),
                 ...(role === 'Admin' || role === 'Funcionario' ? [{ id: 'config', icon: '⚙️', label: 'Config' }] : []),
@@ -367,18 +371,10 @@
             const handleLogin = () => {
                 const user = usuarios.find(u => u.matricula.toLowerCase() === matricula.toLowerCase() && u.senha === senha);
                 if (user) {
-                    if (user.status === 'Cancelado') {
-                        setErro('Acesso revogado. Contate a administração.');
-                        return;
-                    }
-                    if (user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date()) {
-                        setErro(`Usuário bloqueado até ${formatDateBR(user.bloqueado_ate)}`);
-                        return;
-                    }
+                    if (user.status === 'Cancelado') { setErro('Acesso revogado. Contate a administração.'); return; }
+                    if (user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date()) { setErro(`Usuário bloqueado até ${formatDateBR(user.bloqueado_ate)}`); return; }
                     onLogin(user);
-                } else {
-                    setErro('Matrícula ou senha inválidos');
-                }
+                } else { setErro('Matrícula ou senha inválidos'); }
             };
 
             return (
@@ -414,10 +410,7 @@
             const modulosAtivos = modulos.filter(m => m.ativo);
             const getStats = (moduloId) => {
                 const recs = recursos.filter(r => r.moduloId === moduloId);
-                const livres = recs.filter(r => {
-                    const status = getStatusEmTempoReal(r, aulas, reservas);
-                    return status.status === 'Livre';
-                }).length;
+                const livres = recs.filter(r => getStatusEmTempoReal(r, aulas, reservas).status === 'Livre').length;
                 return { total: recs.length, livres };
             };
             const estaBloqueado = user.bloqueado_ate && new Date(user.bloqueado_ate) > new Date();
@@ -445,7 +438,7 @@
                                 <span className="text-2xl">⚠️</span>
                                 <div>
                                     <p className="font-semibold text-amber-800">Atenção</p>
-                                    <p className="text-sm text-amber-600">Você tem {user.noshow_count}/{config.punicao_noshow_limite} no-shows. Mais {config.punicao_noshow_limite - user.noshow_count} e será bloqueado por {config.punicao_dias_bloqueio} dias.</p>
+                                    <p className="text-sm text-amber-600">Você tem {user.noshow_count}/{config.punicao_noshow_limite} no-shows.</p>
                                 </div>
                             </div>
                         </Card>
@@ -462,7 +455,7 @@
                                         <span className={`w-2 h-2 rounded-full ${livres > 0 ? 'bg-emerald-500' : 'bg-red-500'} animate-pulse-dot`}></span>
                                         <span className="text-xs text-slate-500">{livres}/{total} livres</span>
                                     </div>
-                                    {modulo.fila_habilitada && <div className="mt-2"><Badge variant="purple" size="sm">⏳ Fila disponível</Badge></div>}
+                                    {modulo.fila_habilitada && <div className="mt-2"><Badge variant="purple" size="sm">⏳ Fila</Badge></div>}
                                 </Card>
                             );
                         })}
@@ -471,91 +464,165 @@
             );
         };
 
-        // TELA DE RESERVA
+        // =============================================
+        // *** TELA DE RESERVA CORRIGIDA (SELECT + CHECK-IN UNIFICADO) ***
+        // =============================================
         const TelaReserva = ({ modulo, recursos, reservas, aulas, user, config, onReservar, onVoltar, onEntrarFila }) => {
-            const [step, setStep] = useState('recurso');
-            const [recursoSelecionado, setRecursoSelecionado] = useState(null);
+            const [recursoId, setRecursoId] = useState('');
             const [dataSelecionada, setDataSelecionada] = useState(hoje());
             const [horarioSelecionado, setHorarioSelecionado] = useState(null);
             const [comprovante, setComprovante] = useState(null);
-            const isCheckinMode = modulo.tipo_fila === 'checkin';
+            const [step, setStep] = useState('selecao');
 
-            useEffect(() => { if (isCheckinMode && step === 'data') { setDataSelecionada(hoje()); setStep('horario'); } }, [step, isCheckinMode]);
+            const recursosDoModulo = recursos.filter(r => r.moduloId === modulo.id);
+            const recursoSelecionado = recursosDoModulo.find(r => r.id === parseInt(recursoId));
 
-            const recursosLivres = recursos.filter(r => r.moduloId === modulo.id && getStatusEmTempoReal(r, aulas, reservas).status === 'Livre');
-            const recursosIndisponiveis = recursos.filter(r => r.moduloId === modulo.id && getStatusEmTempoReal(r, aulas, reservas).status !== 'Livre');
+            // *** CORREÇÃO 1: SELECT COM STATUS E AULAS ***
+            const opcoesRecursos = recursosDoModulo.map(r => {
+                const statusReal = getStatusEmTempoReal(r, aulas, reservas);
+                const aulasHoje = getAulasHoje(r.id, aulas);
+                let sufixo = '';
+                if (statusReal.status !== 'Livre') {
+                    sufixo = ` (${STATUS_RECURSOS[statusReal.status]?.label || statusReal.status})`;
+                } else if (aulasHoje.length > 0) {
+                    sufixo = ` (Aula: ${aulasHoje.map(a => a.horaInicio + '-' + a.horaFim).join(', ')})`;
+                }
+                return { value: r.id, label: r.nome + sufixo, disabled: statusReal.status !== 'Livre' };
+            });
 
-            const horariosDisponiveis = recursoSelecionado ? gerarHorarios().filter(horario => {
-                const duracaoTotal = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
-                const horaFim = calcularHoraFim(horario, duracaoTotal);
-                const [hFim] = horaFim.split(':').map(Number);
-                if (hFim > 22) return false;
-                
-                const temReserva = reservas.some(r => {
-                    if (r.recursoId !== recursoSelecionado.id || r.data !== dataSelecionada) return false;
-                    if (['Cancelada', 'No-Show', 'Finalizada'].includes(r.status)) return false;
-                    return temConflitoHorario(horario, horaFim, r.horaInicio, r.horaFim);
-                });
-
-                const dt = new Date(dataSelecionada + 'T12:00:00'); 
-                const diaDaSemanaReal = dt.getDay();
-
-                const temAula = aulas.some(aula => {
-                    if (aula.status === 'cancelada') return false; 
-                    if (aula.recursoId !== recursoSelecionado.id) return false;
-                    if (!aula.diasSemana.includes(diaDaSemanaReal)) return false;
-                    return temConflitoHorario(horario, horaFim, aula.horaInicio, aula.horaFim);
-                });
-
-                return !temReserva && !temAula;
+            // Horários disponíveis
+            const horariosDisponiveis = recursoSelecionado ? gerarHorarios().filter(h => {
+                const duracao = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
+                const hFim = calcularHoraFim(h, duracao);
+                if (parseInt(hFim.split(':')[0]) > 22) return false;
+                const conflReserva = reservas.some(r => r.recursoId === recursoSelecionado.id && r.data === dataSelecionada && !['Cancelada', 'No-Show', 'Finalizada'].includes(r.status) && temConflitoHorario(h, hFim, r.horaInicio, r.horaFim));
+                if (conflReserva) return false;
+                const dt = new Date(dataSelecionada + 'T12:00:00');
+                const diaSemana = dt.getDay();
+                const conflAula = aulas.some(a => a.recursoId === recursoSelecionado.id && a.status === 'ativo' && a.diasSemana.includes(diaSemana) && temConflitoHorario(h, hFim, a.horaInicio, a.horaFim));
+                return !conflAula;
             }) : [];
 
             const handleConfirmar = () => {
-                const duracaoTotal = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
-                const horaFinalUso = isCheckinMode ? getHoraAtualArredondada() : horarioSelecionado;
-                const horaFim = calcularHoraFim(horaFinalUso, duracaoTotal);
+                const duracao = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
                 onReservar({
-                    id: Date.now(),
-                    recursoId: recursoSelecionado.id,
-                    usuarioId: user.id,
-                    data: dataSelecionada,
-                    horaInicio: horaFinalUso,
-                    horaFim,
-                    status: modulo.gratuito ? 'Pendente' : 'Aguardando Pagamento',
-                    comprovante_url: comprovante,
-                    valor: modulo.valor,
-                    iniciadaEm: null,
-                    duracaoTotal,
-                    criadaEm: new Date().toISOString()
+                    id: Date.now(), recursoId: parseInt(recursoId), usuarioId: user.id, data: dataSelecionada, horaInicio: horarioSelecionado, horaFim: calcularHoraFim(horarioSelecionado, duracao),
+                    status: modulo.gratuito ? 'Pendente' : 'Aguardando Pagamento', comprovante_url: comprovante, valor: modulo.valor, iniciadaEm: null, duracaoTotal: duracao, criadaEm: new Date().toISOString()
                 });
             };
 
-            // CHECK-IN AGORA ENTRA NA FILA
-            const handleCheckinImediato = () => {
-                const agora = getHoraAtualArredondada();
+            // *** CORREÇÃO 2: CHECK-IN ENTRA NA FILA COM QUADRA ESPECÍFICA ***
+            const handleCheckin = () => {
+                if (!recursoId) return;
                 onEntrarFila({
-                    id: Date.now(),
-                    moduloId: modulo.id,
-                    recursoId: null, // Qualquer recurso
-                    usuarioId: user.id,
-                    data: hoje(),
-                    horario: agora,
-                    criadoEm: new Date().toISOString(),
-                    status: 'Aguardando',
-                    tipoEntrada: 'checkin'
+                    id: Date.now(), moduloId: modulo.id, recursoId: parseInt(recursoId), usuarioId: user.id, data: hoje(), horario: getHoraAtualArredondada(),
+                    criadoEm: new Date().toISOString(), status: 'Aguardando', tipoEntrada: 'checkin'
                 });
             };
 
             return (
                 <div className="p-4 space-y-4 pb-24">
                     <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">← Voltar</button>
-                    <div className="flex items-center gap-3"><span className="text-3xl">{modulo.icone}</span><div><h2 className="text-xl font-bold text-slate-800">{modulo.nome}</h2><p className="text-sm text-slate-500">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor}`}{typeof modulo.duracao === 'number' && ` • ${modulo.duracao}min + ${TEMPO_AQUECIMENTO}min aquec.`}</p></div></div>
-                    {modulo.fila_habilitada && (<Card className="p-4 bg-purple-50 border border-purple-200"><div className="flex items-center justify-between"><div><h4 className="font-semibold text-purple-800">⏳ Fila de Espera</h4><p className="text-sm text-purple-600">{modulo.tipo_fila === 'checkin' ? 'Check-in presencial' : 'Agende sua posição'}</p></div><Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button></div></Card>)}
-                    {step === 'recurso' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">Escolha o local:</h3>{recursosLivres.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700 mb-3">Nenhum recurso disponível no momento (Aulas/Ocupado).</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" onClick={() => onEntrarFila(modulo)}>Entrar na Fila de Espera</Button>}</Card>) : recursosLivres.map(recurso => (<Card key={recurso.id} className={`p-4 border-2 transition-all ${recursoSelecionado?.id === recurso.id ? 'border-teal-500 bg-teal-50' : 'border-transparent hover:border-slate-200'}`} onClick={() => setRecursoSelecionado(recurso)}><div className="flex items-center justify-between"><div><h4 className="font-semibold text-slate-800">{recurso.nome}</h4><div className="flex items-center gap-2 mt-1"><StatusRecursoBadge status={recurso.status} size="sm" /><span className="text-sm text-slate-500">• {recurso.capacidade} pessoas</span></div></div>{recursoSelecionado?.id === recurso.id && <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center text-white">✓</div>}</div></Card>))}{recursosIndisponiveis.length > 0 && (<div className="pt-4 border-t border-slate-100"><p className="text-sm text-slate-500 mb-2">Indisponíveis:</p>{recursosIndisponiveis.map(recurso => { const statusReal = getStatusEmTempoReal(recurso, aulas, reservas); return (<div key={recurso.id} className="p-3 bg-slate-50 rounded-xl mb-2 opacity-60"><div className="flex items-center justify-between"><span className="text-slate-600">{recurso.nome}</span><StatusRecursoBadge status={statusReal.status} size="sm" /></div>{statusReal.motivo && <p className="text-xs text-slate-400 mt-1">{statusReal.motivo}</p>}</div>) })}</div>)}{recursosLivres.length > 0 && <Button className="w-full" disabled={!recursoSelecionado} onClick={() => setStep(isCheckinMode ? 'horario' : 'data')}>Continuar</Button>}</div>)}
-                    {step === 'data' && !isCheckinMode && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">Escolha a data:</h3><Input type="date" value={dataSelecionada} onChange={(e) => setDataSelecionada(e.target.value)} min={hoje()} /><div className="bg-blue-50 p-3 rounded-xl text-sm text-blue-700">⏰ Antecedência máxima: {modulo.antecedencia_maxima}h</div><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep('recurso')}>Voltar</Button><Button className="flex-1" onClick={() => setStep('horario')}>Continuar</Button></div></div>)}
-                    {step === 'horario' && (<div className="space-y-3"><h3 className="font-semibold text-slate-700">{isCheckinMode ? 'Confirmação de Entrada' : 'Escolha o horário:'}</h3><p className="text-sm text-slate-500">{recursoSelecionado.nome} • {formatDateBR(dataSelecionada)}</p>{isCheckinMode ? (<div className="space-y-4 py-4"><Card className="p-6 text-center bg-teal-50 border border-teal-200"><p className="text-lg font-bold text-teal-900 mb-2">Check-in na Fila</p><p className="text-teal-700 text-sm mb-4">Você será adicionado à fila de espera.</p><div className="text-3xl font-mono text-teal-800 font-bold mb-4">{getHoraAtualArredondada()}</div><Button className="w-full" onClick={handleCheckinImediato}>Fazer Check-in (Entrar na Fila)</Button></Card><p className="text-xs text-center text-slate-400">Aguarde ser chamado pelo painel.</p></div>) : (<>{horariosDisponiveis.length === 0 ? (<Card className="p-6 text-center bg-amber-50"><p className="text-amber-700">Nenhum horário disponível.</p>{modulo.fila_habilitada && <Button variant="purple" size="sm" className="mt-3" onClick={() => onEntrarFila(modulo)}>Entrar na Fila</Button>}</Card>) : (<div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto">{horariosDisponiveis.map(horario => (<button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>))}</div>)}</>)}<div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(isCheckinMode ? 'recurso' : 'data')}>Voltar</Button>{!isCheckinMode && <Button className="flex-1" disabled={!horarioSelecionado} onClick={() => setStep(modulo.gratuito ? 'confirmar' : 'pagamento')}>Continuar</Button>}</div></div>)}
-                    {step === 'pagamento' && (<div className="space-y-4"><h3 className="font-semibold text-slate-700">Pagamento via PIX:</h3><Card className="p-4 bg-slate-50"><p className="text-sm text-slate-500 mb-2">Valor:</p><p className="text-3xl font-bold text-slate-800">R$ {modulo.valor},00</p></Card><Card className="p-4"><p className="text-sm text-slate-500 mb-2">Chave PIX ({config.pix_tipo}):</p><div className="flex items-center gap-2"><code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono truncate">{config.pix_chave}</code><Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText(config.pix_chave)}>Copiar</Button></div></Card><div><label className="block text-sm font-medium text-slate-700 mb-2">Upload do Comprovante:</label><div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-400 transition-colors"><input type="file" accept="image/*" onChange={(e) => setComprovante(e.target.files?.[0]?.name || null)} className="hidden" id="comprovante" /><label htmlFor="comprovante" className="cursor-pointer">{comprovante ? (<div className="text-emerald-600"><p className="text-2xl mb-2">✅</p><p className="font-medium">{comprovante}</p><p className="text-sm">Clique para trocar</p></div>) : (<div className="text-slate-400"><p className="text-2xl mb-2">📎</p><p className="font-medium">Clique para anexar</p><p className="text-sm">JPG, PNG ou PDF</p></div>)}</label></div></div><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep('horario')}>Voltar</Button><Button className="flex-1" disabled={!comprovante} onClick={() => setStep('confirmar')}>Continuar</Button></div></div>)}
-                    {step === 'confirmar' && (<div className="space-y-4"><h3 className="font-semibold text-slate-700">Confirme sua reserva:</h3><Card className="p-4 space-y-3"><div className="flex justify-between"><span className="text-slate-500">Local:</span><span className="font-medium text-slate-800">{recursoSelecionado.nome}</span></div><div className="flex justify-between"><span className="text-slate-500">Data:</span><span className="font-medium text-slate-800">{formatDateBR(dataSelecionada)}</span></div><div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium text-slate-800">{horarioSelecionado || getHoraAtualArredondada()} - {calcularHoraFim(horarioSelecionado || getHoraAtualArredondada(), (typeof modulo.duracao === 'number' ? modulo.duracao : 60) + TEMPO_AQUECIMENTO)}</span></div><div className="flex justify-between"><span className="text-slate-500">Duração:</span><span className="font-medium text-slate-800">{typeof modulo.duracao === 'number' ? `${modulo.duracao}min + ${TEMPO_AQUECIMENTO}min aquec.` : 'Diária'}</span></div><div className="flex justify-between"><span className="text-slate-500">Valor:</span><span className="font-medium text-slate-800">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor},00`}</span></div></Card><div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(modulo.gratuito ? 'horario' : 'pagamento')}>Voltar</Button><Button className="flex-1" onClick={handleConfirmar}>✓ Confirmar Reserva</Button></div></div>)}
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">{modulo.icone}</span>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800">{modulo.nome}</h2>
+                            <p className="text-sm text-slate-500">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor}`} • {typeof modulo.duracao === 'number' ? `${modulo.duracao}min + ${TEMPO_AQUECIMENTO}min aquec.` : modulo.duracao}</p>
+                        </div>
+                    </div>
+
+                    {step === 'selecao' && (
+                        <div className="space-y-4">
+                            {/* *** SELECT COMPACTO *** */}
+                            <Select 
+                                label="Selecione a quadra:" 
+                                options={[{ value: '', label: 'Escolha uma quadra...' }, ...opcoesRecursos]}
+                                value={recursoId}
+                                onChange={e => setRecursoId(e.target.value)}
+                            />
+
+                            {/* Mostra aulas do dia */}
+                            {recursoSelecionado && getAulasHoje(recursoSelecionado.id, aulas).length > 0 && (
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
+                                    <p className="text-sm font-medium text-purple-800">📚 Aulas hoje nesta quadra:</p>
+                                    {getAulasHoje(recursoSelecionado.id, aulas).map(a => (
+                                        <p key={a.id} className="text-sm text-purple-600">{a.horaInicio}-{a.horaFim}: {a.nome} ({a.professor})</p>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Botões de ação */}
+                            {modulo.fila_habilitada && modulo.tipo_fila === 'checkin' ? (
+                                <div className="space-y-3">
+                                    <Card className="p-4 bg-teal-50 border border-teal-200">
+                                        <h4 className="font-semibold text-teal-800 mb-2">📍 Check-in Presencial</h4>
+                                        <p className="text-sm text-teal-600 mb-3">Você entra na fila e aguarda ser chamado.</p>
+                                        <Button className="w-full" disabled={!recursoId} onClick={handleCheckin}>Fazer Check-in</Button>
+                                    </Card>
+                                    <div className="text-center text-slate-400 text-sm">ou</div>
+                                    <Button variant="secondary" className="w-full" disabled={!recursoId} onClick={() => setStep('horario')}>Agendar Horário Específico</Button>
+                                </div>
+                            ) : (
+                                <Button className="w-full" disabled={!recursoId} onClick={() => setStep('data')}>Continuar</Button>
+                            )}
+                        </div>
+                    )}
+
+                    {step === 'data' && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-600 font-medium">{recursoSelecionado?.nome}</p>
+                            <Input type="date" label="Data:" value={dataSelecionada} onChange={e => setDataSelecionada(e.target.value)} min={hoje()} />
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep('selecao')}>Voltar</Button>
+                                <Button className="flex-1" onClick={() => setStep('horario')}>Continuar</Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'horario' && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-slate-600 font-medium">{recursoSelecionado?.nome} • {formatDateBR(dataSelecionada)}</p>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 block mb-2">Horário:</label>
+                                {horariosDisponiveis.length === 0 ? (
+                                    <p className="text-amber-600 p-4 bg-amber-50 rounded-xl text-center">Sem horários disponíveis nesta data.</p>
+                                ) : (
+                                    <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
+                                        {horariosDisponiveis.map(h => (
+                                            <button key={h} onClick={() => setHorarioSelecionado(h)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === h ? 'bg-teal-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{h}</button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="secondary" onClick={() => setStep(modulo.fila_habilitada && modulo.tipo_fila === 'checkin' ? 'selecao' : 'data')}>Voltar</Button>
+                                <Button className="flex-1" disabled={!horarioSelecionado} onClick={() => setStep(modulo.gratuito ? 'confirmar' : 'pagamento')}>Continuar</Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'pagamento' && (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-slate-700">Pagamento via PIX:</h3>
+                            <Card className="p-4 bg-slate-50"><p className="text-sm text-slate-500 mb-2">Valor:</p><p className="text-3xl font-bold text-slate-800">R$ {modulo.valor},00</p></Card>
+                            <Card className="p-4"><p className="text-sm text-slate-500 mb-2">Chave PIX ({config.pix_tipo}):</p><div className="flex items-center gap-2"><code className="flex-1 bg-slate-100 px-3 py-2 rounded-lg text-sm font-mono truncate">{config.pix_chave}</code><Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText(config.pix_chave)}>Copiar</Button></div></Card>
+                            <div><label className="block text-sm font-medium text-slate-700 mb-2">Upload do Comprovante:</label><div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-teal-400 transition-colors"><input type="file" accept="image/*" onChange={e => setComprovante(e.target.files?.[0]?.name || null)} className="hidden" id="comprovante" /><label htmlFor="comprovante" className="cursor-pointer">{comprovante ? <span className="text-emerald-600">✅ {comprovante}</span> : <span className="text-slate-400">📎 Clique para anexar</span>}</label></div></div>
+                            <div className="flex gap-2"><Button variant="secondary" onClick={() => setStep('horario')}>Voltar</Button><Button className="flex-1" disabled={!comprovante} onClick={() => setStep('confirmar')}>Continuar</Button></div>
+                        </div>
+                    )}
+
+                    {step === 'confirmar' && (
+                        <div className="space-y-4">
+                            <h3 className="font-semibold text-slate-700">Confirme sua reserva:</h3>
+                            <Card className="p-4 space-y-3">
+                                <div className="flex justify-between"><span className="text-slate-500">Local:</span><span className="font-medium text-slate-800">{recursoSelecionado?.nome}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-500">Data:</span><span className="font-medium text-slate-800">{formatDateBR(dataSelecionada)}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium text-slate-800">{horarioSelecionado} - {calcularHoraFim(horarioSelecionado, (typeof modulo.duracao === 'number' ? modulo.duracao : 60) + TEMPO_AQUECIMENTO)}</span></div>
+                                <div className="flex justify-between"><span className="text-slate-500">Valor:</span><span className="font-medium text-slate-800">{modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor},00`}</span></div>
+                            </Card>
+                            <div className="flex gap-2"><Button variant="secondary" onClick={() => setStep(modulo.gratuito ? 'horario' : 'pagamento')}>Voltar</Button><Button className="flex-1" onClick={handleConfirmar}>✓ Confirmar Reserva</Button></div>
+                        </div>
+                    )}
                 </div>
             );
         };
@@ -574,16 +641,8 @@
                 return filaDoModulo.findIndex(f => f.id === itemFila.id) + 1;
             };
 
-            const listaAtivas = [
-                ...reservasAtivas.map(r => ({...r, tipo: 'reserva', dataSort: r.data + r.horaInicio})),
-                ...minhaFilaAtiva.map(f => ({...f, tipo: 'fila', dataSort: f.data + f.horario}))
-            ].sort((a, b) => a.dataSort.localeCompare(b.dataSort));
-
-            const listaHistorico = [
-                ...reservasHistorico.map(r => ({...r, tipo: 'reserva', dataSort: r.data + r.horaInicio})),
-                ...minhaFilaHistorico.map(f => ({...f, tipo: 'fila', dataSort: f.data + f.horario}))
-            ].sort((a, b) => b.dataSort.localeCompare(a.dataSort));
-
+            const listaAtivas = [...reservasAtivas.map(r => ({...r, tipo: 'reserva'})), ...minhaFilaAtiva.map(f => ({...f, tipo: 'fila'}))];
+            const listaHistorico = [...reservasHistorico.map(r => ({...r, tipo: 'reserva'})), ...minhaFilaHistorico.map(f => ({...f, tipo: 'fila'}))];
             const lista = tab === 'ativas' ? listaAtivas : listaHistorico;
             const getRecurso = (id) => recursos.find(r => r.id === id);
             const getModulo = (id) => modulos.find(m => m.id === id);
@@ -594,10 +653,7 @@
                     <TabBar tabs={[{ id: 'ativas', label: `Ativas (${listaAtivas.length})` }, { id: 'historico', label: `Histórico (${listaHistorico.length})` }]} active={tab} onChange={setTab} />
                     
                     {lista.length === 0 ? (
-                        <Card className="p-8 text-center text-slate-500">
-                            <span className="text-4xl block mb-2">{tab === 'ativas' ? '🌟' : '📜'}</span>
-                            <p>{tab === 'ativas' ? 'Nada agendado no momento.' : 'Histórico vazio.'}</p>
-                        </Card>
+                        <Card className="p-8 text-center text-slate-500"><span className="text-4xl block mb-2">{tab === 'ativas' ? '🌟' : '📜'}</span><p>{tab === 'ativas' ? 'Nada agendado.' : 'Histórico vazio.'}</p></Card>
                     ) : (
                         <div className="space-y-3">
                             {lista.map(item => {
@@ -611,30 +667,16 @@
                                                 <span className="text-2xl">{modulo?.icone}</span>
                                                 <div>
                                                     <h4 className="font-semibold text-slate-800">{isFila ? `Fila: ${modulo?.nome}` : recurso?.nome}</h4>
-                                                    <p className="text-xs text-slate-500">{isFila ? (recurso ? `Local: ${recurso.nome}` : 'Qualquer local livre') : modulo?.nome}</p>
+                                                    <p className="text-xs text-slate-500">{isFila ? (recurso ? recurso.nome : 'Qualquer quadra') : modulo?.nome}</p>
                                                 </div>
                                             </div>
-                                            {isFila ? <Badge variant="purple" size="sm">Fila</Badge> : <StatusReservaBadge status={item.status} />}
+                                            {isFila ? <Badge variant="purple" size="sm">Fila #{getPosicaoFila(item)}</Badge> : <StatusReservaBadge status={item.status} />}
                                         </div>
                                         <div className="bg-slate-50 rounded-lg p-3 text-sm space-y-1">
                                             <div className="flex justify-between"><span className="text-slate-500">Data:</span><span className="font-medium">{formatDateBR(item.data)}</span></div>
-                                            {isFila ? (
-                                                <>
-                                                    <div className="flex justify-between"><span className="text-slate-500">Horário Desejado:</span><span className="font-medium">{item.horario}</span></div>
-                                                    {tab === 'ativas' && (
-                                                        <div className="mt-2 pt-2 border-t border-slate-200 flex justify-between items-center">
-                                                            <span className="text-purple-700 font-bold">Sua Posição:</span>
-                                                            <span className="text-lg font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-full">{getPosicaoFila(item)}º</span>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            ) : (
-                                                <div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium">{item.horaInicio} - {item.horaFim}</span></div>
-                                            )}
+                                            <div className="flex justify-between"><span className="text-slate-500">Horário:</span><span className="font-medium">{isFila ? item.horario : `${item.horaInicio} - ${item.horaFim}`}</span></div>
                                         </div>
-                                        {tab === 'ativas' && (
-                                            <Button variant="danger" size="sm" className="w-full mt-3" onClick={() => isFila ? onCancelarFila(item.id) : onCancelar(item.id)}>{isFila ? 'Sair da Fila' : 'Cancelar Reserva'}</Button>
-                                        )}
+                                        {tab === 'ativas' && <Button variant="danger" size="sm" className="w-full mt-3" onClick={() => isFila ? onCancelarFila(item.id) : onCancelar(item.id)}>{isFila ? 'Sair da Fila' : 'Cancelar'}</Button>}
                                     </Card>
                                 );
                             })}
@@ -644,94 +686,33 @@
             );
         };
 
-        // ENTRAR NA FILA
-        const TelaEntrarFila = ({ modulo, recursos, user, fila, onEntrar, onVoltar }) => {
-            const [tipoEspera, setTipoEspera] = useState('qualquer');
-            const [recursoSelecionado, setRecursoSelecionado] = useState(null);
-            const [dataSelecionada, setDataSelecionada] = useState(hoje());
-            const [horarioSelecionado, setHorarioSelecionado] = useState(null);
-            const recursosDisponiveis = recursos.filter(r => r.moduloId === modulo.id && r.status === 'Livre');
-            const jaEstaNaFila = horarioSelecionado && fila.some(f => f.usuarioId === user.id && f.moduloId === modulo.id && f.data === dataSelecionada && f.horario === horarioSelecionado && f.status === 'Aguardando');
-
-            const handleConfirmar = () => {
-                onEntrar({
-                    id: Date.now(),
-                    moduloId: modulo.id,
-                    recursoId: tipoEspera === 'especifica' ? recursoSelecionado.id : null,
-                    usuarioId: user.id,
-                    data: dataSelecionada,
-                    horario: horarioSelecionado,
-                    criadoEm: new Date().toISOString(),
-                    status: 'Aguardando',
-                    tipoEntrada: modulo.tipo_fila
-                });
-            };
-
-            return (
-                <div className="p-4 space-y-4 pb-24">
-                    <button onClick={onVoltar} className="flex items-center gap-2 text-slate-600 font-medium">← Voltar</button>
-                    <div className="flex items-center gap-3">
-                        <div className="relative"><span className="text-3xl">{modulo.icone}</span><span className="absolute -top-1 -right-1 text-lg">⏳</span></div>
-                        <div><h2 className="text-xl font-bold text-slate-800">Fila de Espera</h2><p className="text-sm text-slate-500">{modulo.nome}</p></div>
-                    </div>
-                    <Card className="p-4 bg-purple-50 border border-purple-200">
-                        <p className="text-sm text-purple-700">{modulo.tipo_fila === 'checkin' ? `📍 Check-in presencial - Compareça até ${modulo.antecedencia_fila} minutos antes.` : `📅 Agendamento - Reserve sua posição na fila.`}</p>
-                    </Card>
-                    <div className="space-y-3">
-                        <h3 className="font-semibold text-slate-700">O que você prefere?</h3>
-                        <Card className={`p-4 border-2 ${tipoEspera === 'qualquer' ? 'border-purple-500 bg-purple-50' : 'border-transparent'}`} onClick={() => { setTipoEspera('qualquer'); setRecursoSelecionado(null); }}>
-                            <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipoEspera === 'qualquer' ? 'border-purple-500' : 'border-slate-300'}`}>{tipoEspera === 'qualquer' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}</div>
-                                <div><p className="font-semibold text-slate-800">Qualquer disponível</p><p className="text-sm text-slate-500">Primeira que vagar</p></div>
-                            </div>
-                        </Card>
-                        <Card className={`p-4 border-2 ${tipoEspera === 'especifica' ? 'border-purple-500 bg-purple-50' : 'border-transparent'}`} onClick={() => setTipoEspera('especifica')}>
-                            <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipoEspera === 'especifica' ? 'border-purple-500' : 'border-slate-300'}`}>{tipoEspera === 'especifica' && <div className="w-3 h-3 bg-purple-500 rounded-full" />}</div>
-                                <div><p className="font-semibold text-slate-800">Específica</p><p className="text-sm text-slate-500">Escolher qual prefiro</p></div>
-                            </div>
-                        </Card>
-                    </div>
-                    {tipoEspera === 'especifica' && (
-                        <div className="space-y-2"><h4 className="text-sm font-medium text-slate-700">Escolha:</h4>{recursosDisponiveis.map(recurso => (<button key={recurso.id} onClick={() => setRecursoSelecionado(recurso)} className={`w-full p-3 rounded-xl text-left transition-all ${recursoSelecionado?.id === recurso.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-slate-50 border-2 border-transparent'}`}>{recurso.nome}</button>))}</div>
-                    )}
-                    {modulo.tipo_fila === 'agendamento' && <Input type="date" label="Data:" value={dataSelecionada} onChange={(e) => setDataSelecionada(e.target.value)} min={hoje()} />}
-                    <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-slate-700">Horário desejado:</h4>
-                        <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">{gerarHorarios().map(horario => (<button key={horario} onClick={() => setHorarioSelecionado(horario)} className={`p-2 rounded-xl text-sm font-medium transition-all ${horarioSelecionado === horario ? 'bg-purple-500 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>{horario}</button>))}</div>
-                    </div>
-                    {jaEstaNaFila && <div className="bg-amber-50 p-3 rounded-xl text-sm text-amber-700">⚠️ Você já está na fila para este horário!</div>}
-                    <Button variant="purple" className="w-full" disabled={!horarioSelecionado || (tipoEspera === 'especifica' && !recursoSelecionado) || jaEstaNaFila} onClick={handleConfirmar}>Entrar na Fila de Espera</Button>
-                </div>
-            );
-        };
-
-        // TELA DE FILA GERAL
-        const TelaFilaEspera = ({ modulos, fila, user, onCancelarFila }) => {
+        // TELA FILA
+        const TelaFilaEspera = ({ modulos, fila, recursos, user, onCancelarFila }) => {
             const minhaFila = fila.filter(f => f.usuarioId === user.id && f.status === 'Aguardando');
-            const getPosicaoReal = (itemFila) => {
-                const filaGeral = fila.filter(f => f.moduloId === itemFila.moduloId && f.status === 'Aguardando').sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm));
-                return filaGeral.findIndex(f => f.id === itemFila.id) + 1;
-            }
+            const getPosicaoReal = (itemFila) => fila.filter(f => f.moduloId === itemFila.moduloId && f.status === 'Aguardando').sort((a, b) => new Date(a.criadoEm) - new Date(b.criadoEm)).findIndex(f => f.id === itemFila.id) + 1;
+            const getRecurso = (id) => recursos.find(r => r.id === id);
 
             return (
                 <div className="p-4 space-y-4 pb-24">
-                    <div className="flex items-center justify-between">
-                        <div><h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2><p className="text-sm text-slate-500">Suas posições atuais</p></div>
-                    </div>
+                    <div><h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2><p className="text-sm text-slate-500">Suas posições atuais</p></div>
                     {minhaFila.length === 0 ? (
                         <Card className="p-8 text-center"><span className="text-4xl mb-4 block">⏳</span><p className="text-slate-500">Você não está em nenhuma fila</p></Card>
                     ) : (
                         <div className="space-y-3">
                             {minhaFila.map(f => {
                                 const modulo = modulos.find(m => m.id === f.moduloId);
+                                const recurso = f.recursoId ? getRecurso(f.recursoId) : null;
                                 const posicao = getPosicaoReal(f);
                                 return (
                                     <Card key={f.id} className="p-4 border-l-4 border-l-purple-500">
                                         <div className="flex justify-between items-start">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-lg">{posicao}º</div>
-                                                <div><h3 className="font-semibold text-slate-800">{modulo?.nome}</h3><p className="text-sm text-slate-500">{f.horario} • {formatDateBR(f.data)}</p></div>
+                                                <div>
+                                                    <h3 className="font-semibold text-slate-800">{modulo?.nome}</h3>
+                                                    <p className="text-sm text-slate-500">{recurso?.nome || 'Qualquer quadra'} • {f.horario}</p>
+                                                    <p className="text-xs text-slate-400">{formatDateBR(f.data)}</p>
+                                                </div>
                                             </div>
                                             <Button variant="danger" size="sm" onClick={() => onCancelarFila(f.id)}>Sair</Button>
                                         </div>
@@ -744,7 +725,9 @@
             );
         };
 
-        // LOUSA DIGITAL
+        // =============================================
+        // *** LOUSA DIGITAL CORRIGIDA (CONSIDERA AULAS) ***
+        // =============================================
         const LousaDigital = ({ modulos, recursos, reservas, usuarios, fila, config, onStart, onEncerrar, onEstender, onNoShow, onAprovarPagamento, onAtribuirFila, aulas }) => {
             const [moduloFiltro, setModuloFiltro] = useState(null);
             const [, forceUpdate] = useState(0);
@@ -768,7 +751,7 @@
                     </div>
                     <div className="flex gap-2 overflow-x-auto pb-2">
                         <Button variant={!moduloFiltro ? 'primary' : 'secondary'} size="sm" onClick={() => setModuloFiltro(null)}>Todos</Button>
-                        {modulosAtivos.map(m => <Button key={m.id} variant={moduloFiltro === m.id ? 'primary' : 'secondary'} size="sm" onClick={() => setModuloFiltro(m.id)}>{m.icone} {m.nome}</Button>)}
+                        {modulosAtivos.map(m => <Button key={m.id} variant={moduloFiltro === m.id ? 'primary' : 'secondary'} size="sm" onClick={() => setModuloFiltro(m.id)}>{m.icone}</Button>)}
                     </div>
                     {totalFila > 0 && (
                         <Card className="p-3 bg-purple-50 border border-purple-200">
@@ -785,9 +768,15 @@
                             const usuario = reserva ? getUsuario(reserva.usuarioId) : null;
                             const filaRecurso = getFilaRecurso(recurso);
                             const statusTempo = reserva ? getStatusTempo(reserva) : null;
+                            
+                            // *** CORREÇÃO 3: STATUS CONSIDERA AULAS ***
                             const statusReal = getStatusEmTempoReal(recurso, aulas, reservas);
-                            const podeUsar = statusReal.status === 'Livre';
-                            const statusCfg = STATUS_RECURSOS[statusReal.status] || STATUS_RECURSOS['Livre'];
+                            const aulasHoje = getAulasHoje(recurso.id, aulas);
+                            const aulaAgora = getAulaAgora(recurso, aulas);
+                            const temAulaAgora = !!aulaAgora;
+                            const indisponivel = ['Manutencao', 'Interditada', 'Limpeza'].includes(recurso.status);
+                            const podeUsar = !indisponivel && !temAulaAgora;
+                            const statusCfg = temAulaAgora ? STATUS_RECURSOS['Reservada'] : STATUS_RECURSOS[recurso.status] || STATUS_RECURSOS['Livre'];
 
                             return (
                                 <Card key={recurso.id} className={`p-4 ${!podeUsar && !reserva ? 'opacity-70' : ''}`}>
@@ -797,20 +786,41 @@
                                             <div>
                                                 <h3 className="font-bold text-slate-800">{recurso.nome}</h3>
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <StatusRecursoBadge status={statusReal.status} size="sm" />
-                                                    {filaRecurso.length > 0 && podeUsar && <Badge variant="purple" size="sm">⏳ {filaRecurso.length} na fila</Badge>}
+                                                    {temAulaAgora ? <Badge variant="purple">🟣 Aula</Badge> : <StatusRecursoBadge status={recurso.status} size="sm" />}
+                                                    {filaRecurso.length > 0 && podeUsar && <Badge variant="purple" size="sm">⏳ {filaRecurso.length}</Badge>}
                                                 </div>
                                             </div>
                                         </div>
+                                        {/* *** MOSTRA AULAS DO DIA *** */}
+                                        {aulasHoje.length > 0 && !temAulaAgora && (
+                                            <div className="text-right">
+                                                <p className="text-xs text-purple-600 font-medium">Aulas hoje:</p>
+                                                {aulasHoje.map(a => <p key={a.id} className="text-xs text-purple-500">{a.horaInicio}-{a.horaFim}</p>)}
+                                            </div>
+                                        )}
                                     </div>
                                     
-                                    {!podeUsar && !reserva ? (
+                                    {/* AULA EM ANDAMENTO */}
+                                    {temAulaAgora && !reserva && (
+                                        <div className="text-center py-4 rounded-xl bg-purple-100">
+                                            <p className="text-lg">📚</p>
+                                            <p className="font-medium text-purple-700">Aula em Andamento</p>
+                                            <p className="text-sm text-purple-600">{aulaAgora.nome} ({aulaAgora.professor})</p>
+                                            <p className="text-xs text-purple-500">{aulaAgora.horaInicio} - {aulaAgora.horaFim}</p>
+                                        </div>
+                                    )}
+
+                                    {/* INDISPONÍVEL */}
+                                    {indisponivel && !temAulaAgora && !reserva && (
                                         <div className="text-center py-4 rounded-xl bg-slate-100">
                                             <p className="text-lg">{statusCfg.icone}</p>
                                             <p className="font-medium text-slate-700">{statusCfg.label}</p>
-                                            {statusReal.motivo && <p className="text-xs text-slate-500 mt-1">{statusReal.motivo}</p>}
+                                            {recurso.motivo && <p className="text-xs text-slate-500 mt-1">{recurso.motivo}</p>}
                                         </div>
-                                    ) : reserva ? (
+                                    )}
+
+                                    {/* RESERVA */}
+                                    {reserva && (
                                         <div className="space-y-3">
                                             <div className="bg-slate-50 p-3 rounded-xl">
                                                 <div className="flex items-center justify-between mb-2">
@@ -819,39 +829,34 @@
                                                         <p className="text-sm text-slate-500">{reserva.horaInicio} - {reserva.horaFim}</p>
                                                     </div>
                                                     <Badge variant={reserva.status === 'Aguardando Pagamento' ? 'purple' : statusTempo?.fase === 'aquecimento' ? 'warning' : statusTempo?.fase === 'jogo' ? 'success' : 'info'}>
-                                                        {reserva.status === 'Aguardando Pagamento' ? '💰 Aguardando' : statusTempo?.fase === 'aquecimento' ? '🔥 Aquecimento' : statusTempo?.fase === 'jogo' ? '🎾 Em Jogo' : '⏸️ Aguardando'}
+                                                        {reserva.status === 'Aguardando Pagamento' ? '💰' : statusTempo?.fase === 'aquecimento' ? '🔥 Aquec.' : statusTempo?.fase === 'jogo' ? '🎾 Jogo' : '⏸️'}
                                                     </Badge>
                                                 </div>
                                                 {statusTempo?.tempo !== null && (
                                                     <div className={`text-center py-3 rounded-xl ${statusTempo.tempo < 300 ? 'bg-red-100 animate-timer-warning' : statusTempo.fase === 'aquecimento' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
                                                         <p className={`text-3xl font-bold font-mono ${statusTempo.tempo < 300 ? 'text-red-600 animate-timer' : statusTempo.fase === 'aquecimento' ? 'text-amber-600' : 'text-emerald-600'}`}>{formatarTempo(statusTempo.tempo)}</p>
-                                                        <p className="text-xs text-slate-500 mt-1">{statusTempo.fase === 'aquecimento' ? `${TEMPO_AQUECIMENTO} min de aquecimento` : `${modulo?.duracao || 60} min de jogo`}</p>
+                                                        <p className="text-xs text-slate-500 mt-1">{statusTempo.fase === 'aquecimento' ? `${TEMPO_AQUECIMENTO} min aquec.` : `${modulo?.duracao || 60} min jogo`}</p>
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex gap-2 flex-wrap">
-                                                {reserva.status === 'Aguardando Pagamento' && <Button variant="success" size="sm" className="flex-1" onClick={() => onAprovarPagamento(reserva.id)}>💰 Aprovar Pagamento</Button>}
-                                                {reserva.status === 'Pendente' && (
-                                                    <>
-                                                        <Button variant="success" size="sm" className="flex-1" onClick={() => onStart(reserva.id)}>▶️ START</Button>
-                                                        <Button variant="danger" size="sm" onClick={() => onNoShow(reserva.id)}>No-Show</Button>
-                                                    </>
-                                                )}
-                                                {reserva.status === 'Em Andamento' && (
-                                                    <>
-                                                        <Button variant="blue" size="sm" onClick={() => onEstender(reserva.id)}>+1 hora</Button>
-                                                        <Button variant="danger" size="sm" className="flex-1" onClick={() => onEncerrar(reserva.id)}>Encerrar</Button>
-                                                    </>
-                                                )}
+                                                {reserva.status === 'Aguardando Pagamento' && <Button variant="success" size="sm" className="flex-1" onClick={() => onAprovarPagamento(reserva.id)}>💰 Aprovar</Button>}
+                                                {reserva.status === 'Pendente' && (<><Button variant="success" size="sm" className="flex-1" onClick={() => onStart(reserva.id)}>▶️ START</Button><Button variant="danger" size="sm" onClick={() => onNoShow(reserva.id)}>No-Show</Button></>)}
+                                                {reserva.status === 'Em Andamento' && (<><Button variant="blue" size="sm" onClick={() => onEstender(reserva.id)}>+1h</Button><Button variant="danger" size="sm" className="flex-1" onClick={() => onEncerrar(reserva.id)}>Encerrar</Button></>)}
                                             </div>
                                         </div>
-                                    ) : (
+                                    )}
+
+                                    {/* LIVRE */}
+                                    {podeUsar && !reserva && !temAulaAgora && (
                                         <div className="text-center py-6 bg-emerald-50 rounded-xl">
                                             <p className="text-2xl mb-1">✓</p>
                                             <p className="text-emerald-700 font-medium">Livre</p>
                                             {filaRecurso.length > 0 && <Button variant="purple" size="sm" className="mt-3" onClick={() => onAtribuirFila(filaRecurso[0], recurso)}>Chamar da Fila</Button>}
                                         </div>
                                     )}
+
+                                    {/* FILA */}
                                     {filaRecurso.length > 0 && podeUsar && (
                                         <div className="mt-3 pt-3 border-t border-slate-100">
                                             <p className="text-xs font-semibold text-purple-700 mb-2">⏳ Próximos na fila:</p>
@@ -869,7 +874,6 @@
                                                         </div>
                                                     );
                                                 })}
-                                                {filaRecurso.length > 3 && <p className="text-xs text-slate-400 text-center">+{filaRecurso.length - 3} mais...</p>}
                                             </div>
                                         </div>
                                     )}
@@ -891,8 +895,6 @@
             const [tab, setTab] = useState(isAdmin ? 'recursos' : 'usuarios');
             const [isUnlocked, setIsUnlocked] = useState(false);
             const [senha, setSenha] = useState('');
-            
-            // Modais
             const [modalRecurso, setModalRecurso] = useState(null);
             const [modalStatus, setModalStatus] = useState(null);
             const [modalModulo, setModalModulo] = useState(null);
@@ -905,7 +907,7 @@
                         <Card className="p-6 text-center max-w-sm mx-auto">
                             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-2xl">🔒</span></div>
                             <h3 className="text-lg font-bold text-slate-800 mb-2">Área Restrita</h3>
-                            <Input type="password" placeholder="Senha de acesso" value={senha} onChange={(e) => setSenha(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && senha === '1234' && setIsUnlocked(true)} />
+                            <Input type="password" placeholder="Senha de acesso" value={senha} onChange={e => setSenha(e.target.value)} onKeyPress={e => e.key === 'Enter' && senha === '1234' && setIsUnlocked(true)} />
                             <Button className="w-full mt-4" onClick={() => senha === '1234' && setIsUnlocked(true)}>Acessar</Button>
                         </Card>
                     </div>
@@ -915,11 +917,7 @@
             const toggleDiaAula = (id) => {
                 if (!modalAula) return;
                 const diasAtuais = modalAula.diasSemana || [];
-                if (diasAtuais.includes(id)) {
-                    setModalAula({ ...modalAula, diasSemana: diasAtuais.filter(d => d !== id) });
-                } else {
-                    setModalAula({ ...modalAula, diasSemana: [...diasAtuais, id].sort() });
-                }
+                setModalAula({ ...modalAula, diasSemana: diasAtuais.includes(id) ? diasAtuais.filter(d => d !== id) : [...diasAtuais, id].sort() });
             };
 
             return (
@@ -938,7 +936,7 @@
                                         <div className="space-y-2">
                                             {recs.map(recurso => (
                                                 <div key={recurso.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                                    <div><p className="font-medium text-slate-800">{recurso.nome}</p><div className="flex items-center gap-2 mt-1"><StatusRecursoBadge status={recurso.status} size="sm" /></div></div>
+                                                    <div><p className="font-medium text-slate-800">{recurso.nome}</p><StatusRecursoBadge status={recurso.status} size="sm" /></div>
                                                     <div className="flex gap-1"><Button variant="ghost" size="sm" onClick={() => setModalStatus(recurso)}>Status</Button><Button variant="ghost" size="sm" onClick={() => setModalRecurso(recurso)}>Editar</Button><Button variant="ghost" size="sm" onClick={() => onDeleteRecurso(recurso.id)}>🗑️</Button></div>
                                                 </div>
                                             ))}
@@ -951,7 +949,7 @@
 
                     {isAdmin && tab === 'aulas' && (
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center"><Button size="sm" onClick={() => setModalAula({ id: null, recursoId: recursos[0]?.id || 1, diasSemana: [1], horaInicio: '18:00', horaFim: '19:00', professor: '', nome: '', status: 'ativo' })}>+ Nova Aula</Button></div>
+                            <div className="flex justify-end"><Button size="sm" onClick={() => setModalAula({ id: null, recursoId: recursos[0]?.id || 1, diasSemana: [1], horaInicio: '18:00', horaFim: '19:00', professor: '', nome: '', status: 'ativo' })}>+ Nova Aula</Button></div>
                             <div className="space-y-2">
                                 {aulas.map(aula => {
                                     const recurso = recursos.find(r => r.id === aula.recursoId);
@@ -960,8 +958,8 @@
                                         <Card key={aula.id} className={`p-3 ${isCancelled ? 'opacity-60 bg-slate-50' : ''}`}>
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="flex items-center gap-2"><h4 className={`font-bold ${isCancelled ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{aula.nome} <span className="font-normal text-slate-500">({aula.professor})</span></h4>{isCancelled && <Badge variant="danger" size="sm">Cancelada</Badge>}</div>
-                                                    <p className="text-sm text-slate-600 font-medium">{formatDiasSemana(aula.diasSemana)}</p>
+                                                    <div className="flex items-center gap-2"><h4 className={`font-bold ${isCancelled ? 'text-slate-500 line-through' : 'text-slate-800'}`}>{aula.nome}</h4>{isCancelled && <Badge variant="danger" size="sm">Cancelada</Badge>}</div>
+                                                    <p className="text-sm text-slate-600">{aula.professor} • {formatDiasSemana(aula.diasSemana)}</p>
                                                     <p className="text-xs text-slate-500">{aula.horaInicio} às {aula.horaFim} • {recurso?.nome}</p>
                                                 </div>
                                                 <div className="flex gap-1"><Button variant="ghost" size="sm" onClick={() => setModalAula(aula)}>Editar</Button><Button variant="ghost" size="sm" onClick={() => onDeleteAula(aula.id)}>🗑️</Button></div>
@@ -974,22 +972,22 @@
                     )}
 
                     {isAdmin && tab === 'modulos' && (
-                        <div className="space-y-3">{modulos.map(mod => (<Card key={mod.id} className="p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><span className="text-2xl">{mod.icone}</span><div><h3 className="font-semibold text-slate-800">{mod.nome}</h3></div></div><div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={() => setModalModulo(mod)}>Editar</Button><Toggle checked={mod.ativo} onChange={(v) => onUpdateModulo(mod.id, { ativo: v })} /></div></div></Card>))}</div>
+                        <div className="space-y-3">{modulos.map(mod => (<Card key={mod.id} className="p-4"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><span className="text-2xl">{mod.icone}</span><h3 className="font-semibold text-slate-800">{mod.nome}</h3></div><div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={() => setModalModulo(mod)}>Editar</Button><Toggle checked={mod.ativo} onChange={v => onUpdateModulo(mod.id, { ativo: v })} /></div></div></Card>))}</div>
                     )}
 
                     {isAdmin && tab === 'fila' && (
-                        <div className="space-y-3">{modulos.filter(m => m.gratuito).map(mod => (<Card key={mod.id} className="p-4"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><span className="text-xl">{mod.icone}</span><h3 className="font-semibold text-slate-800">{mod.nome}</h3></div><Toggle checked={mod.fila_habilitada} onChange={(v) => onUpdateModulo(mod.id, { fila_habilitada: v })} /></div>{mod.fila_habilitada && (<div className="space-y-3 pt-3 border-t border-slate-100"><Input type="number" label="Antecedência mínima (minutos)" value={mod.antecedencia_fila} onChange={(e) => onUpdateModulo(mod.id, { antecedencia_fila: parseInt(e.target.value) || 0 })} min="0" /></div>)}</Card>))}</div>
+                        <div className="space-y-3">{modulos.filter(m => m.gratuito).map(mod => (<Card key={mod.id} className="p-4"><div className="flex items-center justify-between mb-4"><div className="flex items-center gap-2"><span className="text-xl">{mod.icone}</span><h3 className="font-semibold text-slate-800">{mod.nome}</h3></div><Toggle checked={mod.fila_habilitada} onChange={v => onUpdateModulo(mod.id, { fila_habilitada: v })} /></div>{mod.fila_habilitada && <Input type="number" label="Antecedência mínima (min)" value={mod.antecedencia_fila} onChange={e => onUpdateModulo(mod.id, { antecedencia_fila: parseInt(e.target.value) || 0 })} min="0" />}</Card>))}</div>
                     )}
 
                     {isAdmin && tab === 'clube' && (
-                        <Card className="p-4 space-y-4"><Input label="Nome do Clube" value={config.nome_clube} onChange={(e) => onUpdateConfig({ nome_clube: e.target.value })} /><Input label="Chave PIX" value={config.pix_chave} onChange={(e) => onUpdateConfig({ pix_chave: e.target.value })} /></Card>
+                        <Card className="p-4 space-y-4"><Input label="Nome do Clube" value={config.nome_clube} onChange={e => onUpdateConfig({ nome_clube: e.target.value })} /><Input label="Chave PIX" value={config.pix_chave} onChange={e => onUpdateConfig({ pix_chave: e.target.value })} /></Card>
                     )}
 
                     {tab === 'usuarios' && (
                         <div className="space-y-3">
                             <div className="flex justify-between items-center"><p className="text-sm text-slate-500">{usuarios.length} usuários</p>{isAdmin && <Button size="sm" onClick={() => setModalUsuario({ id: null, nome: '', matricula: '', senha: '1234', role: 'Socio', status: 'Ativo' })}>+ Novo</Button>}</div>
                             {usuarios.map(u => (
-                                <Card key={u.id} className="p-4 border-l-4 border-l-transparent hover:border-l-teal-500">
+                                <Card key={u.id} className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div><div className="flex items-center gap-2"><h4 className="font-semibold text-slate-800">{u.nome}</h4>{u.status === 'Cancelado' && <Badge variant="danger" size="sm">Cancelado</Badge>}{u.status === 'Bloqueado' && <Badge variant="warning" size="sm">Bloqueado</Badge>}</div><p className="text-sm text-slate-500">{u.matricula} • {u.role}</p></div>
                                         <Button variant="secondary" size="sm" onClick={() => setModalUsuario(u)}>Editar</Button>
@@ -999,15 +997,16 @@
                         </div>
                     )}
 
+                    {/* MODAIS */}
                     <Modal isOpen={!!modalUsuario} onClose={() => setModalUsuario(null)} title={modalUsuario?.id ? "Editar Usuário" : "Novo Usuário"}>
                         {modalUsuario && (
                             <div className="space-y-4">
-                                <Input label="Nome" value={modalUsuario.nome} onChange={(e) => setModalUsuario({...modalUsuario, nome: e.target.value})} disabled={!isAdmin} />
-                                <Input label="Matrícula" value={modalUsuario.matricula} onChange={(e) => setModalUsuario({...modalUsuario, matricula: e.target.value})} disabled={!isAdmin} />
-                                {isAdmin && <Input label="Senha" value={modalUsuario.senha} onChange={(e) => setModalUsuario({...modalUsuario, senha: e.target.value})} />}
-                                {isAdmin && <Select label="Tipo" options={[{value: 'Socio', label: 'Sócio'}, {value: 'Funcionario', label: 'Funcionário'}, {value: 'Admin', label: 'Administrador'}]} value={modalUsuario.role} onChange={(e) => setModalUsuario({...modalUsuario, role: e.target.value})} />}
-                                <div className="space-y-2"><label className="text-sm font-medium text-slate-700">Status:</label><div className="grid grid-cols-3 gap-2"><button onClick={() => setModalUsuario({...modalUsuario, status: 'Ativo', bloqueado_ate: null})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Ativo' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-bold' : 'border-slate-100'}`}>Ativo</button><button onClick={() => setModalUsuario({...modalUsuario, status: 'Bloqueado', bloqueado_ate: formatDate(addDays(new Date(), 7))})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Bloqueado' ? 'border-amber-500 bg-amber-50' : 'border-slate-100'}`}>Bloqueado</button><button onClick={() => setModalUsuario({...modalUsuario, status: 'Cancelado'})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Cancelado' ? 'border-red-500 bg-red-50' : 'border-slate-100'}`}>Cancelado</button></div></div>
-                                <Button className="w-full mt-4" onClick={() => { if (modalUsuario.id) onUpdateUsuario(modalUsuario.id, modalUsuario); else onAddUsuario({...modalUsuario, id: Date.now(), noshow_count: 0}); setModalUsuario(null); }}>Salvar</Button>
+                                <Input label="Nome" value={modalUsuario.nome} onChange={e => setModalUsuario({...modalUsuario, nome: e.target.value})} disabled={!isAdmin} />
+                                <Input label="Matrícula" value={modalUsuario.matricula} onChange={e => setModalUsuario({...modalUsuario, matricula: e.target.value})} disabled={!isAdmin} />
+                                {isAdmin && <Input label="Senha" value={modalUsuario.senha} onChange={e => setModalUsuario({...modalUsuario, senha: e.target.value})} />}
+                                {isAdmin && <Select label="Tipo" options={[{value: 'Socio', label: 'Sócio'}, {value: 'Funcionario', label: 'Funcionário'}, {value: 'Admin', label: 'Admin'}]} value={modalUsuario.role} onChange={e => setModalUsuario({...modalUsuario, role: e.target.value})} />}
+                                <div className="space-y-2"><label className="text-sm font-medium text-slate-700">Status:</label><div className="grid grid-cols-3 gap-2"><button onClick={() => setModalUsuario({...modalUsuario, status: 'Ativo', bloqueado_ate: null})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Ativo' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100'}`}>Ativo</button><button onClick={() => setModalUsuario({...modalUsuario, status: 'Bloqueado', bloqueado_ate: formatDate(addDays(new Date(), 7))})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Bloqueado' ? 'border-amber-500 bg-amber-50' : 'border-slate-100'}`}>Bloqueado</button><button onClick={() => setModalUsuario({...modalUsuario, status: 'Cancelado'})} className={`p-2 rounded-lg text-sm border-2 ${modalUsuario.status === 'Cancelado' ? 'border-red-500 bg-red-50' : 'border-slate-100'}`}>Cancelado</button></div></div>
+                                <Button className="w-full" onClick={() => { if (modalUsuario.id) onUpdateUsuario(modalUsuario.id, modalUsuario); else onAddUsuario({...modalUsuario, id: Date.now(), noshow_count: 0}); setModalUsuario(null); }}>Salvar</Button>
                             </div>
                         )}
                     </Modal>
@@ -1015,10 +1014,10 @@
                     <Modal isOpen={!!modalRecurso} onClose={() => setModalRecurso(null)} title={modalRecurso?.id ? 'Editar Recurso' : 'Novo Recurso'}>
                         {modalRecurso && (
                             <div className="space-y-4">
-                                <Select label="Módulo" options={modulos.filter(m => m.ativo).map(m => ({ value: m.id, label: `${m.icone} ${m.nome}` }))} value={modalRecurso.moduloId} onChange={(e) => setModalRecurso({ ...modalRecurso, moduloId: parseInt(e.target.value) })} />
-                                <Input label="Nome" placeholder="Ex: Quadra 01" value={modalRecurso.nome} onChange={(e) => setModalRecurso({ ...modalRecurso, nome: e.target.value })} />
-                                <Input type="number" label="Capacidade" value={modalRecurso.capacidade} onChange={(e) => setModalRecurso({ ...modalRecurso, capacidade: parseInt(e.target.value) || 4 })} min="1" />
-                                <Button className="w-full" onClick={() => { if (modalRecurso.id) { onUpdateRecurso(modalRecurso.id, modalRecurso); } else { onAddRecurso({ ...modalRecurso, id: Date.now() }); } setModalRecurso(null); }}>Salvar</Button>
+                                <Select label="Módulo" options={modulos.filter(m => m.ativo).map(m => ({ value: m.id, label: `${m.icone} ${m.nome}` }))} value={modalRecurso.moduloId} onChange={e => setModalRecurso({ ...modalRecurso, moduloId: parseInt(e.target.value) })} />
+                                <Input label="Nome" placeholder="Ex: Quadra 01" value={modalRecurso.nome} onChange={e => setModalRecurso({ ...modalRecurso, nome: e.target.value })} />
+                                <Input type="number" label="Capacidade" value={modalRecurso.capacidade} onChange={e => setModalRecurso({ ...modalRecurso, capacidade: parseInt(e.target.value) || 4 })} min="1" />
+                                <Button className="w-full" onClick={() => { if (modalRecurso.id) onUpdateRecurso(modalRecurso.id, modalRecurso); else onAddRecurso({ ...modalRecurso, id: Date.now() }); setModalRecurso(null); }}>Salvar</Button>
                             </div>
                         )}
                     </Modal>
@@ -1026,13 +1025,13 @@
                     <Modal isOpen={!!modalAula} onClose={() => setModalAula(null)} title={modalAula?.id ? "Editar Aula" : "Nova Aula"}>
                         {modalAula && (
                             <div className="space-y-4">
-                                <Input label="Nome" value={modalAula.nome} onChange={(e) => setModalAula({ ...modalAula, nome: e.target.value })} />
-                                <Input label="Professor" value={modalAula.professor} onChange={(e) => setModalAula({ ...modalAula, professor: e.target.value })} />
-                                <Select label="Local" options={recursos.map(r => ({ value: r.id, label: r.nome }))} value={modalAula.recursoId} onChange={(e) => setModalAula({ ...modalAula, recursoId: parseInt(e.target.value) })} />
-                                <Select label="Status" options={[{value: 'ativo', label: 'Ativa'}, {value: 'cancelada', label: 'Cancelada'}]} value={modalAula.status || 'ativo'} onChange={(e) => setModalAula({ ...modalAula, status: e.target.value })} />
-                                <div className="space-y-2"><label className="text-sm font-medium text-slate-700">Dias:</label><div className="flex gap-2 justify-between">{DIAS_SEMANA.map(dia => { const isSelected = modalAula.diasSemana?.includes(dia.id); return (<button key={dia.id} onClick={() => toggleDiaAula(dia.id)} className={`w-8 h-8 rounded-full font-bold text-xs transition-all flex items-center justify-center ${isSelected ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{dia.curto[0]}</button>); })}</div></div>
-                                <div className="flex gap-2"><Input type="time" label="Início" value={modalAula.horaInicio} onChange={(e) => setModalAula({ ...modalAula, horaInicio: e.target.value })} /><Input type="time" label="Fim" value={modalAula.horaFim} onChange={(e) => setModalAula({ ...modalAula, horaFim: e.target.value })} /></div>
-                                <Button className="w-full" onClick={() => { if (modalAula.id) { onUpdateAula(modalAula.id, modalAula); } else { onAddAula({ ...modalAula, id: Date.now(), status: 'ativo' }); } setModalAula(null); }}>Salvar</Button>
+                                <Input label="Nome" value={modalAula.nome} onChange={e => setModalAula({ ...modalAula, nome: e.target.value })} />
+                                <Input label="Professor" value={modalAula.professor} onChange={e => setModalAula({ ...modalAula, professor: e.target.value })} />
+                                <Select label="Local" options={recursos.map(r => ({ value: r.id, label: r.nome }))} value={modalAula.recursoId} onChange={e => setModalAula({ ...modalAula, recursoId: parseInt(e.target.value) })} />
+                                <Select label="Status" options={[{value: 'ativo', label: 'Ativa'}, {value: 'cancelada', label: 'Cancelada'}]} value={modalAula.status || 'ativo'} onChange={e => setModalAula({ ...modalAula, status: e.target.value })} />
+                                <div className="space-y-2"><label className="text-sm font-medium text-slate-700">Dias:</label><div className="flex gap-2 justify-between">{DIAS_SEMANA.map(dia => (<button key={dia.id} onClick={() => toggleDiaAula(dia.id)} className={`w-8 h-8 rounded-full font-bold text-xs ${modalAula.diasSemana?.includes(dia.id) ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-500'}`}>{dia.curto[0]}</button>))}</div></div>
+                                <div className="flex gap-2"><Input type="time" label="Início" value={modalAula.horaInicio} onChange={e => setModalAula({ ...modalAula, horaInicio: e.target.value })} /><Input type="time" label="Fim" value={modalAula.horaFim} onChange={e => setModalAula({ ...modalAula, horaFim: e.target.value })} /></div>
+                                <Button className="w-full" onClick={() => { if (modalAula.id) onUpdateAula(modalAula.id, modalAula); else onAddAula({ ...modalAula, id: Date.now(), status: 'ativo' }); setModalAula(null); }}>Salvar</Button>
                             </div>
                         )}
                     </Modal>
@@ -1040,8 +1039,8 @@
                     <Modal isOpen={!!modalModulo} onClose={() => setModalModulo(null)} title={`Editar ${modalModulo?.nome}`}>
                         {modalModulo && (
                             <div className="space-y-4">
-                                <Input type="number" label="Valor (R$)" value={modalModulo.valor} onChange={(e) => setModalModulo({ ...modalModulo, valor: parseFloat(e.target.value) || 0 })} min="0" />
-                                <Select label="Duração" options={[{ value: '30', label: '30 min' }, { value: '60', label: '1 h' }, { value: '90', label: '1h30' }]} value={String(modalModulo.duracao)} onChange={(e) => setModalModulo({ ...modalModulo, duracao: parseInt(e.target.value) })} />
+                                <Input type="number" label="Valor (R$)" value={modalModulo.valor} onChange={e => setModalModulo({ ...modalModulo, valor: parseFloat(e.target.value) || 0 })} min="0" />
+                                <Select label="Duração" options={[{ value: '30', label: '30 min' }, { value: '60', label: '1 hora' }, { value: '90', label: '1h30' }]} value={String(modalModulo.duracao)} onChange={e => setModalModulo({ ...modalModulo, duracao: parseInt(e.target.value) })} />
                                 <Button className="w-full" onClick={() => { onUpdateModulo(modalModulo.id, modalModulo); setModalModulo(null); }}>Salvar</Button>
                             </div>
                         )}
@@ -1051,7 +1050,7 @@
                         {modalStatus && (
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-2">{Object.entries(STATUS_RECURSOS).map(([key, cfg]) => (<button key={key} onClick={() => setModalStatus({ ...modalStatus, status: key })} className={`p-3 rounded-xl text-left border-2 ${modalStatus.status === key ? 'border-teal-500 bg-teal-50' : 'border-transparent bg-slate-50'}`}><span className="mr-2">{cfg.icone}</span><span className="font-medium">{cfg.label}</span></button>))}</div>
-                                {['Manutencao', 'Reservada', 'Interditada'].includes(modalStatus.status) && (<Textarea label="Motivo" value={modalStatus.motivo || ''} onChange={(e) => setModalStatus({ ...modalStatus, motivo: e.target.value })} />)}
+                                {['Manutencao', 'Reservada', 'Interditada'].includes(modalStatus.status) && <Textarea label="Motivo" value={modalStatus.motivo || ''} onChange={e => setModalStatus({ ...modalStatus, motivo: e.target.value })} />}
                                 <Button className="w-full" onClick={() => { onUpdateRecurso(modalStatus.id, { status: modalStatus.status, motivo: ['Manutencao', 'Reservada', 'Interditada'].includes(modalStatus.status) ? modalStatus.motivo : null }); setModalStatus(null); }}>Salvar</Button>
                             </div>
                         )}
@@ -1067,7 +1066,6 @@
             const [user, setUser] = useState(null);
             const [view, setView] = useState('home');
             const [selectedModulo, setSelectedModulo] = useState(null);
-            const [moduloParaFila, setModuloParaFila] = useState(null);
             const [config, setConfig] = useState(initialConfig);
             const [modulos, setModulos] = useState(initialModulos);
             const [recursos, setRecursos] = useState(initialRecursos);
@@ -1078,12 +1076,12 @@
             const [notif, setNotif] = useState(null);
             const notify = (message, type = 'success') => setNotif({ message, type });
 
-            // HANDLERS RESERVA
+            // HANDLERS
             const handleReservar = (r) => { setReservas([...reservas, r]); setSelectedModulo(null); notify('Reserva realizada! ✓'); setView('reservas'); };
             const handleCancelarReserva = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Cancelada' } : r)); notify('Reserva cancelada.', 'warning'); };
-            const handleStart = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Em Andamento', iniciadaEm: new Date().toISOString() } : r)); notify('⏱️ Tempo iniciado! Bom jogo!'); };
+            const handleStart = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Em Andamento', iniciadaEm: new Date().toISOString() } : r)); notify('⏱️ Tempo iniciado!'); };
             const handleEncerrar = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Finalizada' } : r)); notify('Reserva encerrada.'); };
-            const handleEstender = (id) => { setReservas(reservas.map(r => { if (r.id !== id) return r; const novaDuracao = r.duracaoTotal + TEMPO_EXTENSAO; return { ...r, duracaoTotal: novaDuracao, horaFim: calcularHoraFim(r.horaInicio, novaDuracao) }; })); notify(`+${TEMPO_EXTENSAO} minutos adicionados! ⏱️`); };
+            const handleEstender = (id) => { setReservas(reservas.map(r => { if (r.id !== id) return r; const novaDuracao = r.duracaoTotal + TEMPO_EXTENSAO; return { ...r, duracaoTotal: novaDuracao, horaFim: calcularHoraFim(r.horaInicio, novaDuracao) }; })); notify(`+${TEMPO_EXTENSAO} min adicionados!`); };
             const handleNoShow = (id) => {
                 const reserva = reservas.find(r => r.id === id);
                 if (!reserva) return;
@@ -1097,21 +1095,20 @@
             };
             const handleAprovarPagamento = (id) => { setReservas(reservas.map(r => r.id === id ? { ...r, status: 'Pendente' } : r)); notify('💰 Pagamento aprovado!'); };
 
-            // HANDLERS FILA
-            const handleEntrarFila = (f) => { setFila([...fila, f]); setModuloParaFila(null); notify('Você entrou na fila! ⏳'); setView('fila'); };
+            // *** FILA UNIFICADA ***
+            const handleEntrarFila = (f) => { setFila([...fila, f]); setSelectedModulo(null); notify('Você entrou na fila! ⏳'); setView('fila'); };
             const handleCancelarFila = (id) => { setFila(fila.filter(f => f.id !== id)); notify('Saiu da fila.', 'warning'); };
-            const handleAdicionarFila = (f) => { setFila([...fila, f]); notify('Pessoa adicionada à fila!'); };
             const handleAtribuirFila = (entradaFila, recurso) => {
                 const modulo = modulos.find(m => m.id === entradaFila.moduloId);
-                const recursoAtribuido = recurso || recursos.find(r => r.id === entradaFila.recursoId) || recursos.find(r => r.moduloId === entradaFila.moduloId && r.status === 'Livre');
-                if (!recursoAtribuido || recursoAtribuido.status !== 'Livre') { notify('Nenhum recurso disponível!', 'error'); return; }
+                const recursoAtribuido = recurso || recursos.find(r => r.id === entradaFila.recursoId) || recursos.find(r => r.moduloId === entradaFila.moduloId && getStatusEmTempoReal(r, aulas, reservas).status === 'Livre');
+                if (!recursoAtribuido || getStatusEmTempoReal(recursoAtribuido, aulas, reservas).status !== 'Livre') { notify('Nenhum recurso disponível!', 'error'); return; }
                 const duracao = typeof modulo.duracao === 'number' ? modulo.duracao + TEMPO_AQUECIMENTO : 480;
                 setReservas([...reservas, { id: Date.now(), recursoId: recursoAtribuido.id, usuarioId: entradaFila.usuarioId, data: entradaFila.data, horaInicio: entradaFila.horario, horaFim: calcularHoraFim(entradaFila.horario, duracao), status: 'Pendente', comprovante_url: null, valor: 0, iniciadaEm: null, duracaoTotal: duracao, criadaEm: new Date().toISOString() }]);
                 setFila(fila.map(f => f.id === entradaFila.id ? { ...f, status: 'Atendido' } : f));
                 notify(`Reserva criada! ✓`);
             };
 
-            // HANDLERS CONFIG
+            // CONFIG
             const handleUpdateConfig = (u) => { setConfig({ ...config, ...u }); notify('Configurações atualizadas!'); };
             const handleUpdateModulo = (id, u) => setModulos(modulos.map(m => m.id === id ? { ...m, ...u } : m));
             const handleAddRecurso = (r) => { setRecursos([...recursos, r]); notify('Recurso criado!'); };
@@ -1123,8 +1120,7 @@
             const handleAddUsuario = (u) => { setUsuarios([...usuarios, u]); notify('Usuário criado!'); };
             const handleUpdateUsuario = (id, u) => { setUsuarios(usuarios.map(usr => usr.id === id ? { ...usr, ...u } : usr)); notify('Usuário atualizado!'); };
 
-            const handleNavigate = (v) => { setView(v); setSelectedModulo(null); setModuloParaFila(null); };
-            const handleVoltar = () => { setSelectedModulo(null); setModuloParaFila(null); };
+            const handleNavigate = (v) => { setView(v); setSelectedModulo(null); };
 
             if (!user) return <TelaLogin usuarios={usuarios} onLogin={setUser} />;
             const userAtualizado = usuarios.find(u => u.id === user.id) || user;
@@ -1133,11 +1129,10 @@
                 <div className="min-h-screen bg-slate-50">
                     <Header user={userAtualizado} onLogout={() => { setUser(null); handleNavigate('home'); }} />
                     <main className="max-w-7xl mx-auto">
-                        {view === 'home' && !selectedModulo && !moduloParaFila && <HomeSocio modulos={modulos} recursos={recursos} aulas={aulas} reservas={reservas} user={userAtualizado} config={config} onSelectModulo={setSelectedModulo} />}
-                        {view === 'home' && selectedModulo && !moduloParaFila && <TelaReserva modulo={selectedModulo} recursos={recursos} reservas={reservas} aulas={aulas} user={userAtualizado} config={config} onReservar={handleReservar} onVoltar={handleVoltar} onEntrarFila={setModuloParaFila} />}
-                        {moduloParaFila && <TelaEntrarFila modulo={moduloParaFila} recursos={recursos} user={userAtualizado} fila={fila} onEntrar={handleEntrarFila} onVoltar={handleVoltar} />}
+                        {view === 'home' && !selectedModulo && <HomeSocio modulos={modulos} recursos={recursos} aulas={aulas} reservas={reservas} user={userAtualizado} config={config} onSelectModulo={setSelectedModulo} />}
+                        {view === 'home' && selectedModulo && <TelaReserva modulo={selectedModulo} recursos={recursos} reservas={reservas} aulas={aulas} user={userAtualizado} config={config} onReservar={handleReservar} onVoltar={() => setSelectedModulo(null)} onEntrarFila={handleEntrarFila} />}
                         {view === 'reservas' && <MinhasReservas reservas={reservas} fila={fila} recursos={recursos} modulos={modulos} user={userAtualizado} onCancelar={handleCancelarReserva} onCancelarFila={handleCancelarFila} />}
-                        {view === 'fila' && <TelaFilaEspera modulos={modulos} fila={fila} user={userAtualizado} onCancelarFila={handleCancelarFila} />}
+                        {view === 'fila' && <TelaFilaEspera modulos={modulos} fila={fila} recursos={recursos} user={userAtualizado} onCancelarFila={handleCancelarFila} />}
                         {view === 'lousa' && userAtualizado.role !== 'Socio' && <LousaDigital modulos={modulos} recursos={recursos} reservas={reservas} usuarios={usuarios} fila={fila} aulas={aulas} config={config} onStart={handleStart} onEncerrar={handleEncerrar} onEstender={handleEstender} onNoShow={handleNoShow} onAprovarPagamento={handleAprovarPagamento} onAtribuirFila={handleAtribuirFila} />}
                         {view === 'config' && (userAtualizado.role === 'Admin' || userAtualizado.role === 'Funcionario') && <PainelConfig currentUser={userAtualizado} config={config} modulos={modulos} recursos={recursos} usuarios={usuarios} aulas={aulas} onUpdateConfig={handleUpdateConfig} onUpdateModulo={handleUpdateModulo} onAddRecurso={handleAddRecurso} onUpdateRecurso={handleUpdateRecurso} onDeleteRecurso={handleDeleteRecurso} onAddAula={handleAddAula} onDeleteAula={handleDeleteAula} onUpdateAula={handleUpdateAula} onAddUsuario={handleAddUsuario} onUpdateUsuario={handleUpdateUsuario} />}
                     </main>
