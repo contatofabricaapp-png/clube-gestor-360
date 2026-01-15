@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>README - Clube Gestor 360</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; line-height: 1.6; color: #24292f; background: #fff; }
+        .container { max-width: 900px; margin: 0 auto; padding: 32px; }
+        h1, h2, h3, h4 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
+        h1 { font-size: 2em; padding-bottom: 0.3em; border-bottom: 1px solid #d0d7de; }
+        h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid #d0d7de; }
+        h3 { font-size: 1.25em; }
+        p { margin-bottom: 16px; }
+        a { color: #0969da; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code { background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 6px; font-family: monospace; font-size: 85%; }
+        pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; margin-bottom: 16px; }
+        pre code { background: none; padding: 0; }
+        ul, ol { margin-bottom: 16px; padding-left: 2em; }
+        li { margin-bottom: 4px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px 16px; text-align: left; }
+        th { background: #f6f8fa; font-weight: 600; }
+        hr { border: 0; border-top: 1px solid #d0d7de; margin: 24px 0; }
+        img { max-width: 100%; border-radius: 6px; }
+        blockquote { border-left: 4px solid #d0d7de; padding-left: 16px; color: #57606a; margin-bottom: 16px; }
+        .badge { display: inline-block; }
+        .badge img { vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="content"></div>
+    </div>
+    <script>
+const markdown = `# 🎾 Clube Gestor 360
+
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-8.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![React](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-3.0-38B2AC.svg?logo=tailwind-css)
+
+**Sistema completo de gestão para clubes esportivos**
+
+</div>
+
+---
+
+## 📸 Screenshots
+
+| Home | Lousa Digital | Reserva |
+|:----:|:-------------:|:-------:|
+| 📱 Tela inicial com módulos | 📋 Controle em tempo real | 🎾 Seleção de quadra |
+
+## ✨ Funcionalidades
+
+### 👤 Para Sócios
+- ✅ Login com matrícula (escalável)
+- ✅ Visualização de quadras disponíveis em tempo real
+- ✅ Reserva de recursos (Tênis, Beach Tennis, Futebol, etc)
+- ✅ Fila de espera (check-in ou agendamento)
+- ✅ Histórico de reservas
+- ✅ Pagamento via PIX com upload de comprovante
+
+### 👨‍💼 Para Funcionários
+- ✅ Lousa Digital - controle em tempo real
+- ✅ Timer com aquecimento (5min) + jogo (60min)
+- ✅ Estender reserva (+1 hora)
+- ✅ Encerrar reserva antecipadamente
+- ✅ Registro de No-Show
+- ✅ Gestão de sócios (bloqueio/desbloqueio)
+
+### ⚙️ Para Administradores
+- ✅ Gestão de quadras/recursos (CRUD completo)
+- ✅ Programação de aulas (professor, dias, horários)
+- ✅ Configuração de módulos (preço, duração, etc)
+- ✅ Gestão de usuários
+- ✅ Configurações do clube (PIX, punições, etc)
+
+## 🚀 Demo
+
+**[Acesse a Demo Online](https://contatofabricaapp-png.github.io/clube-gestor-360/)**
+
+### Usuários de Teste
+
+| Matrícula | Senha | Perfil |
+|-----------|-------|--------|
+| \`ADM001\` | \`1234\` | Administrador |
+| \`FUNC001\` | \`1234\` | Funcionário |
+| \`SOC001\` | \`1234\` | Sócio |
+
+
+## 🏗️ Estrutura do Projeto
+
+\`\`\`
+clube-gestor-360/
+├── index.html          # 🎯 Aplicação completa (arquivo único)
+├── README.md           # 📖 Documentação
+├── LICENSE             # 📄 Licença MIT
+├── .gitignore          # 🚫 Arquivos ignorados
+├── src/                # 📁 Código fonte separado (referência)
+│   ├── css/
+│   │   └── styles.css  # 🎨 Estilos
+│   └── js/
+│       ├── config.js   # ⚙️ Configurações
+│       ├── utils.js    # 🛠️ Utilitários
+│       ├── components.jsx  # 🧩 Componentes
+│       └── screens.jsx # 📱 Telas
+└── docs/               # 📚 Documentação adicional
+    └── screenshots/    # 📸 Capturas de tela
+\`\`\`
+
+## ⚙️ Configuração
+
+### Tempos (em \`index.html\`)
+\`\`\`javascript
+const TEMPO_AQUECIMENTO = 5;   // minutos
+const TEMPO_EXTENSAO = 60;     // minutos (+1 hora)
+\`\`\`
+
+### Dados Iniciais
+Edite os arrays no início do arquivo:
+- \`initialModulos\` - Módulos (Tênis, Futebol, etc)
+- \`initialRecursos\` - Quadras e recursos
+- \`initialAulas\` - Aulas programadas
+- \`initialUsuarios\` - Usuários do sistema
+
+## 🎨 Status dos Recursos
+
+| Status | Cor | Descrição |
+|--------|-----|-----------|
+| 🟢 Livre | Verde | Disponível |
+| 🔵 Ocupada | Azul | Em uso |
+| 🟡 Manutenção | Amarelo | Em reparo |
+| 🟣 Reservada | Roxo | Aula/Evento |
+| 🔴 Interditada | Vermelho | Imprópria |
+| ⚪ Limpeza | Cinza | Em limpeza |
+
+## 🛠️ Tecnologias
+
+- **React 18** - Interface reativa
+- **Tailwind CSS 3** - Estilização
+- **Babel Standalone** - Compilação JSX no browser
+- **PWA Ready** - Funciona offline
+
+## 📝 Roadmap
+
+- [ ] Notificações push
+- [ ] Integração com WhatsApp
+- [ ] Relatórios e dashboards
+- [ ] App mobile nativo
+- [ ] Backend com banco de dados
+- [ ] Sistema de torneios
+
+<div align="center">
+
+⭐ **Se este projeto te ajudou, deixe uma estrela!** ⭐
+
+</div>
+`;
+
+document.getElementById('content').innerHTML = marked.parse(markdown);
+    </script>
+</body>
+</html>
