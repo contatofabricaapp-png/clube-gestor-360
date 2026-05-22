@@ -116,3 +116,36 @@ Todas as telas do sócio estão funcionais com dados do store global.
 - T11 a T14 — Lousa Digital (funcionário)
 - T15 a T19 — Painel Admin
 - T20 em diante — Backend Supabase
+
+---
+
+## [v9.2] — Maio 2026 — Épico 3: Lousa Digital completa
+
+### O que foi implementado
+
+#### pages/funcionario/LousaPage.jsx
+- Grid de todas as quadras em tempo real com fundo escuro (dark mode — ideal para monitores de recepção)
+- Filtro por módulo (Tênis, Beach Tennis, Futebol...) com botões rápidos
+- Banner de alerta quando há pessoas na fila
+- **Timer regressivo** atualizado a cada segundo via `setInterval`
+  - Fase aquecimento (5 min): fundo âmbar + contador âmbar
+  - Fase jogo: fundo verde + contador verde
+  - Últimos 5 min: fundo vermelho pulsando + contador animado
+- **Controles completos por card:**
+  - ▶ START — inicia reserva (define `iniciadaEm` e `duracaoSegundos`)
+  - No-Show — registra falta, incrementa contador, bloqueia se atingir limite
+  - +1h — adiciona 3600 segundos ao timer
+  - Encerrar — finaliza reserva
+  - Aprovar Pagamento — libera reservas pagas (Quiosque, Salão)
+- **Painel de fila por quadra** — lista até 3 próximos com botão Chamar
+  - Chamar da fila: marca fila como "Chamado" e cria reserva automática no nome do sócio
+
+### Tasks concluídas nesta fase
+- T11 — Grid de quadras em tempo real
+- T12 — Timer regressivo com fases e animações
+- T13 — Controles START / Encerrar / +1h / No-Show
+- T14 — Painel de fila com botão Chamar
+
+### Próximas tasks
+- T15 a T19 — Painel Admin (dashboard, CRUD quadras, aulas, usuários, config)
+- T20 em diante — Backend Supabase
