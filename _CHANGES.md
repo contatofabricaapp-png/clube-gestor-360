@@ -149,3 +149,68 @@ Todas as telas do sócio estão funcionais com dados do store global.
 ### Próximas tasks
 - T15 a T19 — Painel Admin (dashboard, CRUD quadras, aulas, usuários, config)
 - T20 em diante — Backend Supabase
+
+---
+
+## [v9.3] — Maio 2026 — Check-in por Fila, Geolocalização e Melhorias na Lousa
+
+### O que foi implementado
+
+#### hooks/useGeolocalizacao.js (novo)
+- Fórmula de Haversine para calcular distância GPS em metros
+- Promise-based: resolve se aprovado, rejeita com mensagem se reprovado
+- Bypass automático quando `clube_lat/lng` não estão configurados (demo/testes funcionam sem GPS)
+- Estados: `ocioso | verificando | aprovado | reprovado | erro | desabilitado`
+
+#### pages/socio/ReservaPage.jsx
+- Módulos `tipo_fila: 'checkin'` agora mostram **apenas check-in** — sem seleção de quadra
+- Módulos `tipo_fila: 'agendamento'` mantêm seleção de quadra + horário
+- Botão de check-in desabilitado e texto "📡 Verificando localização..." durante validação GPS
+- Erro de geolocalização exibido em caixa vermelha abaixo do botão
+- Fila criada com `recursoId: null` (fila do módulo, não de quadra específica)
+- Tela de sucesso mostra **posição na fila** e **previsão de chamada** (ex: ~17:15)
+
+#### pages/socio/FilaPage.jsx
+- Exibe posição, total na fila e previsão de horário por entrada
+- Posição 1: destaque "🎯 Você é o próximo!"
+- Previsão calculada com ciclos: funciona mesmo com mais pessoas do que quadras
+
+#### pages/socio/HomePage.jsx
+- Card de módulo mostra `⏳ N na fila` quando há pessoas esperando
+- Card interditado (todas as quadras bloqueadas) mostra status + motivo e fica não-clicável
+- Sócio vê contagem da fila mas nunca os nomes
+
+#### pages/funcionario/LousaPage.jsx
+- **Painel consolidado de fila** colapsável — mostra só contagem por padrão (privacidade), expande com nomes ao clicar "▼ ver fila"
+- **🗑️ Limpar fila** no painel: abre modal listando quem será removido, agrupado por módulo, com tempo de espera
+- **⚙️ Alterar status** por quadra individual: modal com opções Livre / Manutenção / Interditada / Limpeza + motivo
+- **🌧️ Alterar em Massa**: aplica status a todas as quadras ou só de um módulo de uma vez
+- **Check-in Manual** por quadra: busca sócio por nome ou matrícula e cria reserva diretamente
+- Reservas `Pendente` com `horaFim` já passada não bloqueiam mais a quadra
+- Banner de fila filtrado pelo módulo selecionado (não conta outros módulos)
+
+#### lib/utils.js
+- `calcularPrevisaoFila(moduloId, posicao, reservas, recursos, duracaoMin)`: estima horário de chamada com suporte a ciclos (posição > número de quadras)
+
+#### store/useStore.jsx
+- `LIMPAR_FILA`: cancela todas as entradas `Aguardando` de um módulo (ou todos)
+- `ATUALIZAR_STATUS_EM_MASSA`: altera status de todos os recursos de um módulo (ou todos)
+
+#### lib/dados.js
+- 26 sócios demo (SOC001–SOC032)
+- `initialReservas`: 2 quadras Em Andamento com timer ativo + 1 Pendente
+- `initialFilas`: 25 pessoas na fila do Tênis com chegadas escalonadas
+
+### Regras de negócio definidas
+- **Fila por módulo**: sócio entra na fila do módulo, não de uma quadra específica
+- **Visibilidade da fila**: funcionário vê nomes; sócio vê só contagem e própria posição
+- **Módulos inativos** (`ativo: false`): somem de todas as telas sem precisar remover dados
+- **Previsão de chamada**: baseada nos timers ativos; para posições além do nº de quadras, adiciona um ciclo de `duracaoMin` por rodada
+
+### Tasks concluídas
+- T34 — Check-in por geolocalização
+- T35 — Check-in manual pelo funcionário
+
+### Próximas tasks
+- T15 a T19 — Painel Admin (dashboard, CRUD quadras/aulas/usuários, configurações do clube)
+- T20 em diante — Backend Supabase (auth, banco, realtime)
