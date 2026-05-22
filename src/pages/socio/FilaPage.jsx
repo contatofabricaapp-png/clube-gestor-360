@@ -3,11 +3,12 @@ import { useStore } from '../../store/useStore.jsx'
 import { Card, Button, Badge } from '../../components/ui/index.jsx'
 import Header from '../../components/layout/Header.jsx'
 import BottomNav from '../../components/layout/BottomNav.jsx'
+import { calcularPrevisaoFila } from '../../lib/utils.js'
 
 export default function FilaPage() {
   const { user } = useAuth()
   const { state, dispatch } = useStore()
-  const { filas, modulos, recursos } = state
+  const { filas, modulos, recursos, reservas } = state
 
   const usuarioStore = state.usuarios.find(u => u.matricula === user?.matricula)
   const minhaFila = filas.filter(f => f.usuarioId === usuarioStore?.id && f.status === 'Aguardando')
@@ -37,6 +38,8 @@ export default function FilaPage() {
             const recurso = f.recursoId ? recursos.find(r => r.id === f.recursoId) : null
             const posicao = getPosicao(f)
             const totalNaFila = filas.filter(x => x.moduloId === f.moduloId && x.status === 'Aguardando').length
+            const duracaoMin = typeof modulo?.duracao === 'number' ? modulo.duracao + 5 : 65
+            const previsao = calcularPrevisaoFila(f.moduloId, posicao, reservas, recursos, duracaoMin)
 
             return (
               <Card key={f.id} className="p-4 border-l-4 border-l-purple-400 space-y-4">
@@ -54,13 +57,18 @@ export default function FilaPage() {
                   <Badge variant="purple">Aguardando</Badge>
                 </div>
 
-                {posicao === 1 && (
+                {posicao === 1 ? (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
                     <p className="text-emerald-700 font-semibold text-sm">
                       🎯 Você é o próximo! Aguarde ser chamado pelo funcionário.
                     </p>
                   </div>
-                )}
+                ) : previsao ? (
+                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 flex items-center justify-between">
+                    <p className="text-teal-600 text-sm">⏱️ Previsão de chamada</p>
+                    <p className="text-teal-700 font-bold text-lg">{previsao}</p>
+                  </div>
+                ) : null}
 
                 <Button
                   variant="danger"

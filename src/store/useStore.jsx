@@ -5,6 +5,8 @@ import {
   initialAulas,
   initialUsuarios,
   initialConfig,
+  initialReservas,
+  initialFilas,
 } from '../lib/dados'
 import { hoje, calcularHoraFim } from '../lib/utils'
 
@@ -16,8 +18,8 @@ const estadoInicial = {
   recursos: initialRecursos,
   aulas:    initialAulas,
   usuarios: initialUsuarios,
-  reservas: [],
-  filas:    [],
+  reservas: initialReservas,
+  filas:    initialFilas,
 }
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -154,6 +156,18 @@ function reducer(state, action) {
       }
     }
 
+    case 'LIMPAR_FILA': {
+      const { moduloId } = action.payload
+      return {
+        ...state,
+        filas: state.filas.map(f =>
+          f.status === 'Aguardando' && (moduloId == null || f.moduloId === moduloId)
+            ? { ...f, status: 'Cancelado' }
+            : f
+        ),
+      }
+    }
+
     case 'CHAMAR_DA_FILA': {
       return {
         ...state,
@@ -171,6 +185,18 @@ function reducer(state, action) {
         recursos: state.recursos.map(r =>
           r.id === action.payload.recursoId
             ? { ...r, status: action.payload.status, motivo: action.payload.motivo ?? r.motivo }
+            : r
+        ),
+      }
+    }
+
+    case 'ATUALIZAR_STATUS_EM_MASSA': {
+      const { moduloId, status, motivo } = action.payload
+      return {
+        ...state,
+        recursos: state.recursos.map(r =>
+          (moduloId == null || r.moduloId === moduloId)
+            ? { ...r, status, motivo: motivo ?? null }
             : r
         ),
       }

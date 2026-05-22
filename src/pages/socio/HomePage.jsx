@@ -11,14 +11,32 @@ export default function SocioHome() {
   const { state } = useStore()
   const navigate = useNavigate()
 
-  const { modulos, recursos, aulas, reservas, config } = state
+  const { modulos, recursos, aulas, reservas, filas, config } = state
 
   const modulosAtivos = modulos.filter(m => m.ativo)
 
+  const getFilaCount = (moduloId) =>
+    filas.filter(f => f.moduloId === moduloId && f.status === 'Aguardando').length
+
   const getStats = (moduloId) => {
     const recs = recursos.filter(r => r.moduloId === moduloId)
-    const livres = recs.filter(r => getStatusEmTempoReal(r, aulas, reservas).status === 'Livre').length
-    return { total: recs.length, livres }
+    const statuses = recs.map(r => ({ recurso: r, real: getStatusEmTempoReal(r, aulas, reservas) }))
+    const livres = statuses.filter(s => s.real.status === 'Livre').length
+
+    // Detecta se TODAS estão indisponíveis por status manual (não por reserva/aula)
+    const naoLivres = statuses.filter(s => s.real.status !== 'Livre')
+    const todasBloqueadas = livres === 0 && recs.length > 0 &&
+      naoLivres.every(s => ['Manutencao', 'Interditada', 'Limpeza'].includes(s.real.status))
+
+    const statusBloqueio = todasBloqueadas
+      ? (naoLivres.some(s => s.real.status === 'Interditada') ? 'Interditada' :
+         naoLivres.some(s => s.real.status === 'Manutencao')  ? 'Manutencao'  : 'Limpeza')
+      : null
+    const motivoBloqueio = todasBloqueadas
+      ? (naoLivres.find(s => s.real.motivo)?.real.motivo ?? null)
+      : null
+
+    return { total: recs.length, livres, todasBloqueadas, statusBloqueio, motivoBloqueio }
   }
 
   // Busca dados atualizados do usuário logado no store (pode ter sido bloqueado)
@@ -72,30 +90,63 @@ export default function SocioHome() {
         {/* Grid de módulos */}
         <div className="grid grid-cols-2 gap-3">
           {modulosAtivos.map(modulo => {
-            const { total, livres } = getStats(modulo.id)
+            const { total, livres, todasBloqueadas, statusBloqueio, motivoBloqueio } = getStats(modulo.id)
+            const naFila = getFilaCount(modulo.id)
+
+            const corBloqueio = statusBloqueio === 'Interditada' ? 'red'
+              : statusBloqueio === 'Manutencao' ? 'amber' : 'slate'
+            const iconeBloqueio = statusBloqueio === 'Interditada' ? '🔴'
+              : statusBloqueio === 'Manutencao' ? '🟡' : '⚪'
+            const labelBloqueio = statusBloqueio === 'Interditada' ? 'Interditado'
+              : statusBloqueio === 'Manutencao' ? 'Em Manutenção' : 'Em Limpeza'
+
             return (
               <Card
                 key={modulo.id}
-                className={`p-4 text-center ${estaBloqueado ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={estaBloqueado ? undefined : () => navigate(`/socio/reserva/${modulo.id}`)}
+                className={`p-4 text-center overflow-hidden ${
+                  estaBloqueado || todasBloqueadas ? 'cursor-not-allowed' : 'cursor-pointer'
+                }`}
+                onClick={estaBloqueado || todasBloqueadas ? undefined : () => navigate(`/socio/reserva/${modulo.id}`)}
               >
-                <span className="text-4xl mb-2 block">{modulo.icone}</span>
+                <span className={`text-4xl mb-2 block ${todasBloqueadas ? 'grayscale opacity-60' : ''}`}>
+                  {modulo.icone}
+                </span>
                 <h3 className="font-semibold text-slate-800 text-sm">{modulo.nome}</h3>
                 <p className="text-xs text-slate-500 mt-1">
                   {modulo.gratuito ? 'Gratuito' : `R$ ${modulo.valor}`}
                 </p>
 
-                {total > 0 && (
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    <span className={`w-2 h-2 rounded-full ${livres > 0 ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                    <span className="text-xs text-slate-500">{livres}/{total} livres</span>
+                {todasBloqueadas ? (
+                  <div className={`mt-2 rounded-lg px-2 py-1.5 ${
+                    corBloqueio === 'red'   ? 'bg-red-50'   :
+                    corBloqueio === 'amber' ? 'bg-amber-50' : 'bg-slate-100'
+                  }`}>
+                    <p className={`text-xs font-semibold ${
+                      corBloqueio === 'red'   ? 'text-red-700'   :
+                      corBloqueio === 'amber' ? 'text-amber-700' : 'text-slate-600'
+                    }`}>
+                      {iconeBloqueio} {labelBloqueio}
+                    </p>
+                    {motivoBloqueio && (
+                      <p className="text-xs text-slate-500 mt-0.5 truncate" title={motivoBloqueio}>
+                        {motivoBloqueio}
+                      </p>
+                    )}
                   </div>
-                )}
-
-                {modulo.fila_habilitada && (
-                  <div className="mt-2">
-                    <Badge variant="purple" size="sm">⏳ Fila disponível</Badge>
-                  </div>
+                ) : (
+                  <>
+                    {total > 0 && (
+                      <div className="flex items-center justify-center gap-1 mt-2">
+                        <span className={`w-2 h-2 rounded-full ${livres > 0 ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                        <span className="text-xs text-slate-500">{livres}/{total} livres</span>
+                      </div>
+                    )}
+                    {naFila > 0 && (
+                      <div className="flex items-center justify-center gap-1 mt-1">
+                        <span className="text-xs text-purple-500">⏳ {naFila} na fila</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </Card>
             )

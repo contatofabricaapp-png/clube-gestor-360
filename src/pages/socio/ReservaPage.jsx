@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { useStore } from '../../store/useStore.jsx'
+import { useGeolocalizacao } from '../../hooks/useGeolocalizacao.js'
 import { Card, Button, Badge } from '../../components/ui/index.jsx'
 import { Input, Select } from '../../components/ui/forms.jsx'
 import Header from '../../components/layout/Header.jsx'
 import BottomNav from '../../components/layout/BottomNav.jsx'
 import {
   hoje, formatDateBR, calcularHoraFim, gerarHorarios,
-  getStatusEmTempoReal, temConflitoHorario, getHoraAtualExata
+  getStatusEmTempoReal, temConflitoHorario, getHoraAtualExata,
+  calcularPrevisaoFila,
 } from '../../lib/utils.js'
 import { TEMPO_AQUECIMENTO } from '../../lib/dados.js'
 
@@ -17,6 +19,7 @@ export default function ReservaPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { state, dispatch } = useStore()
+  const { estado: estadoGeo, verificar: verificarGeo } = useGeolocalizacao()
 
   const { modulos, recursos, aulas, reservas, filas, config } = state
 
@@ -28,6 +31,8 @@ export default function ReservaPage() {
   const [comprovante, setComprovante] = useState(null)
   const [step, setStep] = useState('selecao') // selecao | horario | pagamento | confirmar
   const [sucesso, setSucesso] = useState(false)
+  const [erroGeo, setErroGeo] = useState('')
+  const [previsao, setPrevisao] = useState(null)
 
   if (!modulo) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -100,18 +105,33 @@ export default function ReservaPage() {
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
-  function handleCheckin() {
-    if (!recursoId) return
+  async function handleCheckin() {
     if (temAtivaNoModulo()) {
-      alert('Você já tem uma reserva ou fila ativa neste módulo!')
+      setErroGeo('Você já tem uma reserva ou fila ativa neste módulo!')
       return
     }
-    const usuarioStore = state.usuarios.find(u => u.matricula === user.matricula)
-    dispatch({
-      type: 'ENTRAR_FILA',
-      payload: { usuarioId: usuarioStore.id, moduloId: modulo.id, recursoId: parseInt(recursoId) }
-    })
-    setSucesso(true)
+    setErroGeo('')
+    try {
+      await verificarGeo({
+        clubeLat:  config.clube_lat,
+        clubeLng:  config.clube_lng,
+        raioMetros: config.raio_checkin_metros,
+        habilitado: config.checkin_geolocalizacao,
+      })
+      const usuarioStore = state.usuarios.find(u => u.matricula === user.matricula)
+      const posicao = filas.filter(
+        f => f.moduloId === modulo.id && f.status === 'Aguardando' && f.data === hoje()
+      ).length + 1
+      const estimativa = calcularPrevisaoFila(modulo.id, posicao, reservas, recursos, duracao)
+      setPrevisao({ posicao, estimativa })
+      dispatch({
+        type: 'ENTRAR_FILA',
+        payload: { usuarioId: usuarioStore.id, moduloId: modulo.id, recursoId: null }
+      })
+      setSucesso(true)
+    } catch (err) {
+      setErroGeo(err.message)
+    }
   }
 
   function handleConfirmar() {
@@ -145,11 +165,30 @@ export default function ReservaPage() {
         <h2 className="text-xl font-bold text-slate-800 text-center">
           {step === 'selecao' ? 'Check-in realizado!' : 'Reserva confirmada!'}
         </h2>
-        <p className="text-slate-500 text-center text-sm">
-          {step === 'selecao'
-            ? 'Você entrou na fila. Aguarde ser chamado.'
-            : `${recursoSelecionado?.nome} · ${formatDateBR(data)} · ${horario}`}
-        </p>
+
+        {step === 'selecao' && previsao ? (
+          <div className="w-full max-w-xs space-y-3">
+            <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-center space-y-1">
+              <p className="text-purple-500 text-sm">Você está em</p>
+              <p className="text-4xl font-bold text-purple-700">{previsao.posicao}º</p>
+              <p className="text-purple-500 text-sm">lugar na fila</p>
+            </div>
+            {previsao.estimativa && (
+              <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 text-center space-y-1">
+                <p className="text-teal-500 text-sm">Previsão de chamada</p>
+                <p className="text-3xl font-bold text-teal-700">{previsao.estimativa}</p>
+                <p className="text-teal-400 text-xs">baseado nos jogos em andamento</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-slate-500 text-center text-sm">
+            {step === 'selecao'
+              ? 'Você entrou na fila. Aguarde ser chamado.'
+              : `${recursoSelecionado?.nome} · ${formatDateBR(data)} · ${horario}`}
+          </p>
+        )}
+
         <Button className="w-full max-w-xs" onClick={() => navigate('/socio/reservas')}>Ver minhas reservas</Button>
         <Button variant="secondary" className="w-full max-w-xs" onClick={() => navigate('/socio')}>Voltar ao início</Button>
       </main>
@@ -183,44 +222,50 @@ export default function ReservaPage() {
         {/* STEP 1 — Seleção de quadra */}
         {step === 'selecao' && (
           <div className="space-y-4">
-            <Select
-              label="Selecione a quadra:"
-              options={[{ value: '', label: 'Escolha uma quadra...' }, ...opcoesRecursos]}
-              value={recursoId}
-              onChange={e => { setRecursoId(e.target.value); setHorario('') }}
-            />
-
-            {/* Aulas programadas hoje */}
-            {aulasHojeSelecionado.length > 0 && (
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                <p className="text-sm font-semibold text-purple-800">📚 Aulas hoje nesta quadra:</p>
-                {aulasHojeSelecionado.map(a => (
-                  <p key={a.id} className="text-sm text-purple-600">
-                    {a.horaInicio}–{a.horaFim}: {a.nome} ({a.professor})
-                  </p>
-                ))}
-              </div>
-            )}
 
             {/* Check-in OU Agendamento */}
             {modulo.fila_habilitada && modulo.tipo_fila === 'checkin' ? (
-              <div className="space-y-3">
-                <Card className="p-4 bg-teal-50 border border-teal-200 space-y-2">
-                  <h4 className="font-semibold text-teal-800">📍 Check-in Presencial</h4>
-                  <p className="text-sm text-teal-600">Você entra na fila e aguarda ser chamado pelo funcionário.</p>
-                  <Button className="w-full" disabled={!recursoId} onClick={handleCheckin}>
-                    Fazer Check-in
-                  </Button>
-                </Card>
-                <div className="text-center text-slate-400 text-xs">ou</div>
-                <Button variant="secondary" className="w-full" disabled={!recursoId} onClick={() => setStep('horario')}>
-                  Agendar Horário Específico
+              /* Fila pura — sem seleção de quadra */
+              <Card className="p-4 bg-teal-50 border border-teal-200 space-y-2">
+                <h4 className="font-semibold text-teal-800">📍 Check-in Presencial</h4>
+                <p className="text-sm text-teal-600">
+                  Você entra na fila e será chamado assim que a primeira quadra ficar livre.
+                </p>
+                <Button
+                  className="w-full"
+                  disabled={estadoGeo === 'verificando'}
+                  onClick={handleCheckin}
+                >
+                  {estadoGeo === 'verificando' ? '📡 Verificando localização...' : 'Fazer Check-in'}
+                </Button>
+                {erroGeo && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p className="text-sm text-red-700 font-medium">⚠️ {erroGeo}</p>
+                  </div>
+                )}
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <Select
+                  label="Selecione a quadra:"
+                  options={[{ value: '', label: 'Escolha uma quadra...' }, ...opcoesRecursos]}
+                  value={recursoId}
+                  onChange={e => { setRecursoId(e.target.value); setHorario('') }}
+                />
+                {aulasHojeSelecionado.length > 0 && (
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
+                    <p className="text-sm font-semibold text-purple-800">📚 Aulas hoje nesta quadra:</p>
+                    {aulasHojeSelecionado.map(a => (
+                      <p key={a.id} className="text-sm text-purple-600">
+                        {a.horaInicio}–{a.horaFim}: {a.nome} ({a.professor})
+                      </p>
+                    ))}
+                  </div>
+                )}
+                <Button className="w-full" disabled={!recursoId} onClick={() => setStep('horario')}>
+                  Continuar
                 </Button>
               </div>
-            ) : (
-              <Button className="w-full" disabled={!recursoId} onClick={() => setStep('horario')}>
-                Continuar
-              </Button>
             )}
           </div>
         )}

@@ -28,6 +28,10 @@ export const initialConfig = {
   pix_tipo: 'Email',
   punicao_noshow_limite: 3,
   punicao_dias_bloqueio: 7,
+  checkin_geolocalizacao: true,   // exige GPS no check-in
+  raio_checkin_metros: 50,         // raio máximo para check-in (metros)
+  clube_lat: null,                 // latitude do clube (definir no admin)
+  clube_lng: null,                 // longitude do clube (definir no admin)
 }
 
 export const initialModulos = [
@@ -73,11 +77,85 @@ export const initialAulas = [
 ]
 
 export const initialUsuarios = [
-  { id: 1, nome: 'Admin Master',   matricula: 'ADM001',  senha: '1234', perfil: 'admin',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
-  { id: 2, nome: 'João Recepção',  matricula: 'FUNC001', senha: '1234', perfil: 'funcionario', status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
-  { id: 3, nome: 'Maria Silva',    matricula: 'SOC001',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
-  { id: 4, nome: 'Carlos Santos',  matricula: 'SOC002',  senha: '1234', perfil: 'socio',       status: 'Bloqueado', noshow_count: 2, bloqueado_ate: '2025-12-31' },
-  { id: 5, nome: 'Ana Oliveira',   matricula: 'SOC003',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
-  { id: 6, nome: 'Pedro Costa',    matricula: 'SOC004',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 1, bloqueado_ate: null         },
-  { id: 7, nome: 'Lucia Ferreira', matricula: 'SOC005',  senha: '1234', perfil: 'socio',       status: 'Cancelado', noshow_count: 0, bloqueado_ate: null         },
+  { id: 1, nome: 'Admin Master',    matricula: 'ADM001',  senha: '1234', perfil: 'admin',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
+  { id: 2, nome: 'João Recepção',   matricula: 'FUNC001', senha: '1234', perfil: 'funcionario', status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
+  { id: 3, nome: 'Maria Silva',     matricula: 'SOC001',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
+  { id: 4, nome: 'Carlos Santos',   matricula: 'SOC002',  senha: '1234', perfil: 'socio',       status: 'Bloqueado', noshow_count: 2, bloqueado_ate: '2025-12-31' },
+  { id: 5, nome: 'Ana Oliveira',    matricula: 'SOC003',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 0, bloqueado_ate: null         },
+  { id: 6, nome: 'Pedro Costa',     matricula: 'SOC004',  senha: '1234', perfil: 'socio',       status: 'Ativo',     noshow_count: 1, bloqueado_ate: null         },
+  { id: 7, nome: 'Lucia Ferreira',  matricula: 'SOC005',  senha: '1234', perfil: 'socio',       status: 'Cancelado', noshow_count: 0, bloqueado_ate: null         },
+  { id: 8,  nome: 'Roberto Lima',      matricula: 'SOC006',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 9,  nome: 'Fernanda Rocha',    matricula: 'SOC007',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 10, nome: 'Marcos Almeida',    matricula: 'SOC008',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 11, nome: 'Juliana Mendes',    matricula: 'SOC009',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 12, nome: 'Rafael Souza',      matricula: 'SOC010',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 13, nome: 'Patrícia Nunes',    matricula: 'SOC011',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 14, nome: 'Bruno Carvalho',    matricula: 'SOC012',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 15, nome: 'Camila Ribeiro',    matricula: 'SOC013',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 16, nome: 'Diego Martins',     matricula: 'SOC014',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 17, nome: 'Larissa Gomes',     matricula: 'SOC015',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 18, nome: 'Thiago Barbosa',    matricula: 'SOC016',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 19, nome: 'Aline Castro',      matricula: 'SOC017',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 20, nome: 'Felipe Dias',       matricula: 'SOC018',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 21, nome: 'Renata Pinto',      matricula: 'SOC019',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 22, nome: 'Gustavo Melo',      matricula: 'SOC020',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 23, nome: 'Vanessa Teixeira',  matricula: 'SOC021',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 24, nome: 'Leonardo Freitas',  matricula: 'SOC022',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 25, nome: 'Isabela Correia',   matricula: 'SOC023',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 26, nome: 'Rodrigo Nascimento',matricula: 'SOC024',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 27, nome: 'Tatiane Moreira',   matricula: 'SOC025',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 28, nome: 'Vinícius Lopes',    matricula: 'SOC026',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 29, nome: 'Priscila Azevedo',  matricula: 'SOC027',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 30, nome: 'Anderson Rocha',    matricula: 'SOC028',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 31, nome: 'Sabrina Faria',     matricula: 'SOC029',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 32, nome: 'Henrique Cunha',    matricula: 'SOC030',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 33, nome: 'Mônica Cardoso',    matricula: 'SOC031',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
+  { id: 34, nome: 'Alexandre Batista', matricula: 'SOC032',  senha: '1234', perfil: 'socio', status: 'Ativo', noshow_count: 0, bloqueado_ate: null },
 ]
+
+// ── Helpers de data/hora para dados demo ──────────────────────────────────────
+const _hoje = () => new Date().toISOString().split('T')[0]
+const _hora = (offsetMin = 0) => {
+  const d = new Date(Date.now() + offsetMin * 60000)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+const _iso = (offsetMin = 0) => new Date(Date.now() + offsetMin * 60000).toISOString()
+
+// Quadras ocupadas no momento (para demo da Lousa)
+export const initialReservas = [
+  // Quadra 01 — Em Andamento há 12 min, 65 min de duração total
+  {
+    id: 201, usuarioId: 5, recursoId: 1, moduloId: 1,
+    data: _hoje(), horaInicio: _hora(-12), horaFim: _hora(53),
+    tipo: 'checkin', status: 'Em Andamento',
+    criadaEm: _iso(-15), comprovantePix: null,
+    iniciadaEm: _iso(-12), duracaoSegundos: 65 * 60,
+  },
+  // Quadra 02 — Em Andamento há 35 min, últimos minutos
+  {
+    id: 202, usuarioId: 6, recursoId: 2, moduloId: 1,
+    data: _hoje(), horaInicio: _hora(-35), horaFim: _hora(30),
+    tipo: 'checkin', status: 'Em Andamento',
+    criadaEm: _iso(-38), comprovantePix: null,
+    iniciadaEm: _iso(-35), duracaoSegundos: 65 * 60,
+  },
+  // Quadra 05 — Pendente, aguardando START
+  {
+    id: 203, usuarioId: 8, recursoId: 5, moduloId: 1,
+    data: _hoje(), horaInicio: _hora(0), horaFim: _hora(65),
+    tipo: 'checkin', status: 'Pendente',
+    criadaEm: _iso(-3), comprovantePix: null,
+  },
+]
+
+// Fila de espera inicial (para demo da Lousa) — 25 no Tênis
+const _filaIds  = [3,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32]
+export const initialFilas = _filaIds.map((uid, i) => ({
+  id: 100 + i + 1,
+  usuarioId: uid,
+  moduloId: 1,
+  recursoId: null,
+  data: _hoje(),
+  entradaEm: _iso(-(25 - i) * 2), // chegadas a cada 2 min
+  status: 'Aguardando',
+}))

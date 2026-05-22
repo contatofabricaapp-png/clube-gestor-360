@@ -57,6 +57,46 @@ export const formatDiasSemana = (dias) => {
   return dias.sort().map(d => DIAS_SEMANA.find(ds => ds.id === d)?.curto).join(', ')
 }
 
+// Estima quando o sócio na posição `posicao` será chamado da fila do módulo.
+// duracaoMin = duração típica de uma partida no módulo (para calcular ciclos).
+// Retorna string "~HH:MM", "agora" ou null.
+export function calcularPrevisaoFila(moduloId, posicao, reservas, recursos, duracaoMin = 65) {
+  const agora = Date.now()
+  const hojeStr = new Date().toISOString().split('T')[0]
+
+  const recursosModulo = recursos.filter(r => r.moduloId === moduloId)
+  if (!recursosModulo.length) return null
+
+  const disponibilidades = recursosModulo
+    .map(recurso => {
+      const r = reservas.find(res =>
+        res.recursoId === recurso.id &&
+        res.data === hojeStr &&
+        ['Em Andamento', 'Pendente', 'Confirmada', 'Aguardando Pagamento'].includes(res.status)
+      )
+      if (!r) return agora
+      if (r.status === 'Em Andamento' && r.iniciadaEm && r.duracaoSegundos) {
+        return Math.max(agora, new Date(r.iniciadaEm).getTime() + r.duracaoSegundos * 1000)
+      }
+      if (r.horaFim) {
+        const [h, m] = r.horaFim.split(':').map(Number)
+        const d = new Date()
+        return Math.max(agora, new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m).getTime())
+      }
+      return agora + 60 * 60 * 1000
+    })
+    .sort((a, b) => a - b)
+
+  const n = disponibilidades.length
+  const ciclo = Math.floor((posicao - 1) / n)
+  const indice = (posicao - 1) % n
+  const ts = disponibilidades[indice] + ciclo * duracaoMin * 60 * 1000
+
+  if (ts <= agora + 60000) return 'agora'
+  const d = new Date(ts)
+  return `~${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export const getStatusEmTempoReal = (recurso, aulas, reservas) => {
   if (['Manutencao', 'Interditada', 'Limpeza'].includes(recurso.status)) {
     return { status: recurso.status, motivo: recurso.motivo }
