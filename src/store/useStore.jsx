@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import {
   initialModulos,
   initialRecursos,
@@ -288,6 +289,44 @@ function reducer(state, action) {
       return { ...state, config: { ...state.config, ...action.payload } }
     }
 
+    // Carregamento inicial do Supabase ─────────────────────────────────────────
+    // Mapeia snake_case do banco para camelCase usado no frontend
+
+    case 'SET_MODULOS': {
+      const modulos = action.payload.map(m => ({
+        ...m,
+        antecedencia_maxima:  m.antecedencia_maxima,
+        janela_cancelamento:  m.janela_cancelamento,
+        fila_habilitada:      m.fila_habilitada,
+        tipo_fila:            m.tipo_fila,
+        antecedencia_fila:    m.antecedencia_fila,
+        duracao: isNaN(Number(m.duracao)) ? m.duracao : Number(m.duracao),
+      }))
+      return { ...state, modulos }
+    }
+
+    case 'SET_RECURSOS': {
+      const recursos = action.payload.map(r => ({
+        ...r,
+        moduloId: r.modulo_id,
+      }))
+      return { ...state, recursos }
+    }
+
+    case 'SET_AULAS': {
+      const aulas = action.payload.map(a => ({
+        ...a,
+        recursoId:  a.recurso_id,
+        diasSemana: a.dias_semana,
+        horaInicio: a.hora_inicio,
+        horaFim:    a.hora_fim,
+      }))
+      return { ...state, aulas }
+    }
+
+    case 'SET_CONFIG':
+      return { ...state, config: { ...state.config, ...action.payload } }
+
     default:
       return state
   }
@@ -299,8 +338,41 @@ const StoreContext = createContext(null)
 
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, estadoInicial)
+  const [carregando, setCarregando] = useState(false)
+
+  useEffect(() => {
+    if (!supabase) return  // sem credenciais → usa dados demo
+    carregarDados()
+  }, [])
+
+  async function carregarDados() {
+    setCarregando(true)
+    try {
+      const [
+        { data: modulos },
+        { data: recursos },
+        { data: aulas },
+        { data: config },
+      ] = await Promise.all([
+        supabase.from('modulos').select('*').order('id'),
+        supabase.from('recursos').select('*').order('id'),
+        supabase.from('aulas').select('*').order('id'),
+        supabase.from('config').select('*').limit(1).single(),
+      ])
+
+      if (modulos)  dispatch({ type: 'SET_MODULOS',  payload: modulos  })
+      if (recursos) dispatch({ type: 'SET_RECURSOS', payload: recursos })
+      if (aulas)    dispatch({ type: 'SET_AULAS',    payload: aulas    })
+      if (config)   dispatch({ type: 'SET_CONFIG',   payload: config   })
+    } catch {
+      // falha silenciosa — mantém dados demo
+    } finally {
+      setCarregando(false)
+    }
+  }
+
   return (
-    <StoreContext.Provider value={{ state, dispatch }}>
+    <StoreContext.Provider value={{ state, dispatch, carregando }}>
       {children}
     </StoreContext.Provider>
   )

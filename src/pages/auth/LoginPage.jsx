@@ -2,35 +2,30 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
 
-// Usuários de demo — serão substituídos pelo Supabase na Fase 2
-const USUARIOS_DEMO = [
-  { matricula: 'ADM001',  senha: '1234', nome: 'Admin Master',      perfil: 'admin'       },
-  { matricula: 'FUNC001', senha: '1234', nome: 'João Recepção',     perfil: 'funcionario' },
-  { matricula: 'SOC001',  senha: '1234', nome: 'Maria Silva',       perfil: 'socio'       },
-  { matricula: 'SOC003',  senha: '1234', nome: 'Ana Oliveira',      perfil: 'socio'       },
-  { matricula: 'SOC004',  senha: '1234', nome: 'Pedro Costa',       perfil: 'socio'       },
-]
-
 export default function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [matricula, setMatricula] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
+  const [carregando, setCarregando] = useState(false)
 
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault()
-    const usuario = USUARIOS_DEMO.find(
-      u => u.matricula === matricula.toUpperCase() && u.senha === senha
-    )
-    if (!usuario) {
-      setErro('Matrícula ou senha inválidos.')
-      return
+    setErro('')
+    setCarregando(true)
+    try {
+      const usuario = await login(matricula, senha)
+      // Em modo Supabase, o perfil chega via onAuthStateChange — usamos user do contexto
+      const perfil = usuario?.perfil
+      if (perfil === 'admin')            navigate('/admin')
+      else if (perfil === 'funcionario') navigate('/lousa')
+      else                               navigate('/socio')
+    } catch (err) {
+      setErro(err.message || 'Matrícula ou senha inválidos.')
+    } finally {
+      setCarregando(false)
     }
-    login(usuario)
-    if (usuario.perfil === 'admin')       navigate('/admin')
-    else if (usuario.perfil === 'funcionario') navigate('/lousa')
-    else navigate('/socio')
   }
 
   return (
@@ -70,9 +65,10 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition-colors"
+            disabled={carregando}
+            className="w-full bg-primary-600 hover:bg-primary-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors"
           >
-            Entrar
+            {carregando ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 

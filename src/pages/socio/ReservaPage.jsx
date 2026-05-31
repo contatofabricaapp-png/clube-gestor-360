@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { useStore } from '../../store/useStore.jsx'
@@ -13,6 +13,7 @@ import {
   calcularPrevisaoFila,
 } from '../../lib/utils.js'
 import { TEMPO_AQUECIMENTO } from '../../lib/dados.js'
+import { supabase } from '../../lib/supabase.js'
 
 export default function ReservaPage() {
   const { moduloId } = useParams()
@@ -28,7 +29,8 @@ export default function ReservaPage() {
   const [recursoId, setRecursoId] = useState('')
   const [data, setData] = useState(hoje())
   const [horario, setHorario] = useState('')
-  const [comprovante, setComprovante] = useState(null)
+  const [comprovante, setComprovante] = useState(null)   // nome do arquivo (display)
+  const comprovanteFileRef = useRef(null)                // File object para upload
   const [step, setStep] = useState('selecao') // selecao | horario | pagamento | confirmar
   const [sucesso, setSucesso] = useState(false)
   const [erroGeo, setErroGeo] = useState('')
@@ -103,6 +105,22 @@ export default function ReservaPage() {
       })
     : []
 
+  // Faz upload do comprovante para o Supabase Storage; retorna o path ou null
+  async function uploadComprovante(file) {
+    if (!supabase || !file) return null
+    try {
+      const ext  = file.name.split('.').pop()
+      const path = `${user.id}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage
+        .from('comprovantes-pix')
+        .upload(path, file, { upsert: false })
+      if (error) return null
+      return path
+    } catch {
+      return null
+    }
+  }
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   async function handleCheckin() {
@@ -134,12 +152,16 @@ export default function ReservaPage() {
     }
   }
 
-  function handleConfirmar() {
+  async function handleConfirmar() {
     if (temAtivaNoModulo()) {
       alert('Você já tem uma reserva ou fila ativa neste módulo!')
       return
     }
     const usuarioStore = state.usuarios.find(u => u.matricula === user.matricula)
+
+    // Upload do comprovante se houver arquivo selecionado
+    const pixPath = await uploadComprovante(comprovanteFileRef.current)
+
     dispatch({
       type: 'FAZER_RESERVA',
       payload: {
@@ -150,6 +172,7 @@ export default function ReservaPage() {
         horaInicio: horario,
         duracao,
         tipo: 'agendamento',
+        comprovantePix: pixPath,
       }
     })
     setSucesso(true)
@@ -344,7 +367,11 @@ export default function ReservaPage() {
                   accept="image/*"
                   id="comp"
                   className="hidden"
-                  onChange={e => setComprovante(e.target.files?.[0]?.name || null)}
+                  onChange={e => {
+                    const file = e.target.files?.[0] || null
+                    comprovanteFileRef.current = file
+                    setComprovante(file?.name || null)
+                  }}
                 />
                 <label htmlFor="comp" className="cursor-pointer">
                   {comprovante
