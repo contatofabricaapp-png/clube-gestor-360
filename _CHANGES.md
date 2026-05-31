@@ -212,5 +212,56 @@ Todas as telas do sócio estão funcionais com dados do store global.
 - T35 — Check-in manual pelo funcionário
 
 ### Próximas tasks
-- T15 a T19 — Painel Admin (dashboard, CRUD quadras/aulas/usuários, configurações do clube)
+- T20 em diante — Backend Supabase (auth, banco, realtime)
+
+---
+
+## [v9.4] — Maio 2026 — Épico 4: Painel Admin completo
+
+### O que foi implementado
+
+#### pages/admin/DashboardPage.jsx
+- Shell com navegação em 5 abas: 📊 Dashboard | 🎾 Quadras | 📚 Aulas | 👥 Usuários | ⚙️ Config
+- Cabeçalho fixo com nome do admin e botão Sair
+
+#### pages/admin/tabs/DashboardTab.jsx — T15
+- 6 cards de resumo: reservas hoje, em andamento, quadras livres/total, fila ativa, sócios bloqueados, no-shows do dia
+- Painel de fila por módulo (quando há pessoas aguardando)
+- Lista das 15 reservas mais recentes do dia com nome, quadra, horário e badge de status
+
+#### pages/admin/tabs/QuadrasTab.jsx — T16
+- Listagem de recursos com filtro por módulo
+- Badge de status por quadra (Livre, Manutenção, Interditada, Limpeza)
+- Modal criar/editar: módulo, nome, capacidade, status inicial, motivo
+- Modal confirmar exclusão com aviso de impacto em reservas/aulas
+
+#### pages/admin/tabs/AulasTab.jsx — T17
+- Listagem de aulas com filtro por módulo
+- Exibe professor, quadra, horário e dias da semana
+- Modal criar/editar: quadra, nome, professor, início, fim, dias da semana (botões toggle), status ativo/inativo
+- Modal confirmar exclusão
+
+#### pages/admin/tabs/UsuariosTab.jsx — T18
+- Busca por nome ou matrícula
+- Filtro rápido por perfil: Todos | Sócios | Funcionários | Admins
+- Cards com badges de perfil, status, no-shows e data de bloqueio
+- Ações rápidas: Bloquear (com escolha de dias) | Desbloquear | Zerar no-shows
+- Modal criar/editar: nome, matrícula, senha inicial (só criação), perfil, status
+
+#### pages/admin/tabs/ConfigTab.jsx — T19
+- Navegação por seções: Clube | PIX | No-Show | Localização | Módulos
+- **Clube**: nome do clube
+- **PIX**: tipo de chave e chave PIX usados nas telas de pagamento
+- **No-Show**: limite de no-shows para bloqueio e dias de bloqueio
+- **Localização**: toggle para exigir GPS, raio em metros, lat/lng do clube
+- **Módulos**: toggle ativo/inativo + configurações por módulo (tipo_fila, fila habilitada, duração, valor, antecedência máxima, janela de cancelamento)
+
+### Tasks concluídas
+- T15 — Dashboard (stats + reservas recentes)
+- T16 — CRUD de Quadras
+- T17 — CRUD de Aulas
+- T18 — Gestão de Usuários
+- T19 — Configurações do clube e módulos
+
+### Próximas tasks
 - T20 em diante — Backend Supabase (auth, banco, realtime)
