@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { useStore } from '../../store/useStore.jsx'
+import { useRealtime } from '../../hooks/useRealtime.js'
 import { Card, Button, Badge } from '../../components/ui/index.jsx'
 import { StatusRecursoBadge } from '../../components/ui/StatusBadges.jsx'
 import Modal from '../../components/ui/Modal.jsx'
@@ -17,6 +18,8 @@ export default function LousaPage() {
   const { state, dispatch } = useStore()
   const navigate = useNavigate()
   const [moduloFiltro, setModuloFiltro] = useState(null)
+
+  useRealtime('reservas', () => dispatch({ type: 'SYNC_REALTIME' }))
   const [tick, setTick] = useState(0)
   const [checkinModal, setCheckinModal] = useState(null) // { recurso } | null
   const [buscaSocio, setBuscaSocio] = useState('')

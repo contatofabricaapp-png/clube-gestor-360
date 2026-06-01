@@ -327,6 +327,10 @@ function reducer(state, action) {
     case 'SET_CONFIG':
       return { ...state, config: { ...state.config, ...action.payload } }
 
+    // Disparado pelo Realtime do Supabase — fase 2 fará refetch; em demo é no-op
+    case 'SYNC_REALTIME':
+      return state
+
     default:
       return state
   }

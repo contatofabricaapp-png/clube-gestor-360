@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { useStore } from '../../store/useStore.jsx'
+import { useNotificacaoPush } from '../../hooks/useNotificacaoPush.js'
 import { Card, Button, Badge } from '../../components/ui/index.jsx'
 import Header from '../../components/layout/Header.jsx'
 import BottomNav from '../../components/layout/BottomNav.jsx'
@@ -9,9 +11,25 @@ export default function FilaPage() {
   const { user } = useAuth()
   const { state, dispatch } = useStore()
   const { filas, modulos, recursos, reservas } = state
+  const { permissao, solicitarPermissao, notificarLocal } = useNotificacaoPush()
+  const jaNotificou = useRef(new Set())
 
   const usuarioStore = state.usuarios.find(u => u.matricula === user?.matricula)
   const minhaFila = filas.filter(f => f.usuarioId === usuarioStore?.id && f.status === 'Aguardando')
+
+  // Notifica quando o sócio chega à primeira posição da fila
+  useEffect(() => {
+    minhaFila.forEach(f => {
+      const posicao = filas
+        .filter(x => x.moduloId === f.moduloId && x.status === 'Aguardando')
+        .sort((a, b) => new Date(a.entradaEm) - new Date(b.entradaEm))
+        .findIndex(x => x.id === f.id) + 1
+      if (posicao === 1 && !jaNotificou.current.has(f.id)) {
+        jaNotificou.current.add(f.id)
+        notificarLocal('Sua vez chegou! 🎾', 'Dirija-se à quadra agora.')
+      }
+    })
+  }, [filas])
 
   const getPosicao = (f) =>
     filas
@@ -24,7 +42,20 @@ export default function FilaPage() {
       <Header />
 
       <main className="flex-1 p-4 space-y-4 pb-24">
-        <h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-800">⏳ Fila de Espera</h2>
+          {permissao === 'default' && (
+            <button
+              onClick={solicitarPermissao}
+              className="text-xs px-3 py-1.5 bg-teal-50 border border-teal-200 text-teal-700 rounded-xl hover:bg-teal-100 transition-colors"
+            >
+              🔔 Ativar alertas
+            </button>
+          )}
+          {permissao === 'granted' && (
+            <span className="text-xs text-emerald-600 font-medium">🔔 Alertas ativos</span>
+          )}
+        </div>
 
         {minhaFila.length === 0 ? (
           <Card className="p-10 text-center space-y-2">

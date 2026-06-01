@@ -1,9 +1,12 @@
 import { useStore } from '../../../store/useStore.jsx'
+import { useRealtime } from '../../../hooks/useRealtime.js'
 import { Card, Badge } from '../../../components/ui/index.jsx'
 import { hoje, formatDateBR } from '../../../lib/utils.js'
 
 export default function DashboardTab() {
-  const { state } = useStore()
+  const { state, dispatch } = useStore()
+
+  useRealtime('reservas', () => dispatch({ type: 'SYNC_REALTIME' }))
   const { reservas, filas, recursos, usuarios, modulos } = state
 
   const hojeStr = hoje()

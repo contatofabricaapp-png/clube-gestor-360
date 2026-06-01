@@ -2,18 +2,20 @@ import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth.jsx'
 import { useNavigate, Link } from 'react-router-dom'
 import { TabBar } from '../../components/ui/index.jsx'
-import DashboardTab from './tabs/DashboardTab.jsx'
-import QuadrasTab   from './tabs/QuadrasTab.jsx'
-import AulasTab     from './tabs/AulasTab.jsx'
-import UsuariosTab  from './tabs/UsuariosTab.jsx'
-import ConfigTab    from './tabs/ConfigTab.jsx'
+import DashboardTab  from './tabs/DashboardTab.jsx'
+import QuadrasTab    from './tabs/QuadrasTab.jsx'
+import AulasTab      from './tabs/AulasTab.jsx'
+import UsuariosTab   from './tabs/UsuariosTab.jsx'
+import ConfigTab     from './tabs/ConfigTab.jsx'
+import RelatoriosTab from './tabs/RelatoriosTab.jsx'
 
 const ABAS = [
-  { id: 'dashboard', label: '📊 Dashboard' },
-  { id: 'quadras',   label: '🎾 Quadras' },
-  { id: 'aulas',     label: '📚 Aulas' },
-  { id: 'usuarios',  label: '👥 Usuários' },
-  { id: 'config',    label: '⚙️ Config' },
+  { id: 'dashboard',  label: '📊 Dashboard' },
+  { id: 'quadras',    label: '🎾 Quadras' },
+  { id: 'aulas',      label: '📚 Aulas' },
+  { id: 'usuarios',   label: '👥 Usuários' },
+  { id: 'relatorios', label: '📈 Relatórios' },
+  { id: 'config',     label: '⚙️ Config' },
 ]
 
 export default function AdminDashboard() {
@@ -56,8 +58,9 @@ export default function AdminDashboard() {
         {abaAtiva === 'dashboard' && <DashboardTab />}
         {abaAtiva === 'quadras'   && <QuadrasTab />}
         {abaAtiva === 'aulas'     && <AulasTab />}
-        {abaAtiva === 'usuarios'  && <UsuariosTab />}
-        {abaAtiva === 'config'    && <ConfigTab />}
+        {abaAtiva === 'usuarios'   && <UsuariosTab />}
+        {abaAtiva === 'relatorios' && <RelatoriosTab />}
+        {abaAtiva === 'config'     && <ConfigTab />}
       </main>
 
     </div>
