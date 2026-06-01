@@ -1,6 +1,6 @@
 # Clube Gestor 360 — CLAUDE.md
 
-Sistema SaaS de gestão para clubes esportivos: reservas de quadras, fila de espera, check-in por geolocalização, lousa digital para funcionários e painel admin completo. Frontend 100% funcional com dados demo em localStorage; backend Supabase planejado para a próxima fase.
+Sistema SaaS de gestão para clubes esportivos: reservas de quadras, fila de espera, check-in por geolocalização, lousa digital para funcionários e painel admin completo. Frontend 100% funcional com dados demo em localStorage; backend PocketBase pronto para conectar.
 
 ## Stack
 
@@ -8,8 +8,8 @@ Sistema SaaS de gestão para clubes esportivos: reservas de quadras, fila de esp
 - **React Router 6** para navegação
 - **Tailwind CSS 3** com tema customizado (cor primary: teal)
 - **Context API + useReducer** para estado global (`src/store/useStore.jsx`)
-- **@supabase/supabase-js** instalado mas não conectado (aguarda fase 2)
-- **localStorage** para persistência atual
+- **pocketbase** SDK instalado (conecta quando `VITE_POCKETBASE_URL` estiver em `.env.local`)
+- **localStorage** para persistência em modo demo
 
 ## Estrutura essencial
 
@@ -17,21 +17,24 @@ Sistema SaaS de gestão para clubes esportivos: reservas de quadras, fila de esp
 src/
 ├── App.jsx                      # Rotas + guards de autenticação
 ├── hooks/
-│   ├── useAuth.jsx              # Auth (localStorage, sem Supabase ainda)
+│   ├── useAuth.jsx              # Auth (modo demo ou PocketBase)
+│   ├── useRealtime.js           # Realtime PocketBase (no-op em demo)
 │   └── useGeolocalizacao.js     # GPS para check-in
 ├── store/useStore.jsx           # Estado global (Context + useReducer)
 ├── lib/
-│   ├── dados.js                 # Dados demo + constantes (ex: TEMPO_AQUECIMENTO)
-│   ├── supabase.js              # Cliente Supabase (inativo, aguarda .env)
+│   ├── dados.js                 # Dados demo + constantes
+│   ├── pocketbase.js            # Cliente PocketBase (null sem .env)
 │   └── utils.js                 # 30+ funções utilitárias
 ├── pages/
 │   ├── auth/LoginPage.jsx
 │   ├── socio/                   # HomePage, ReservaPage, MinhasReservasPage, FilaPage
 │   ├── funcionario/LousaPage.jsx
-│   └── admin/DashboardPage.jsx  # + tabs/ (Dashboard, Quadras, Aulas, Usuarios, Config)
+│   └── admin/DashboardPage.jsx  # + tabs/ (Dashboard, Quadras, Aulas, Usuarios, Relatorios, Config)
 └── components/
     ├── ui/                      # Componentes reutilizáveis
     └── layout/                  # Header, BottomNav
+pocketbase/
+└── schema.md                   # Collections e API rules para configurar no painel
 ```
 
 ## Comandos
@@ -50,9 +53,11 @@ npm run preview  # Preview da build → http://localhost:4173
 | FUNC001   | funcionario  | /lousa        |
 | SOC001    | socio        | /socio        |
 
+O admin também acessa as visões de sócio (/socio/*) e funcionário (/lousa).
+
 ## Variáveis de ambiente
 
-Copie `.env.example` para `.env.local` e preencha com as credenciais do Supabase:
+Copie `.env.example` para `.env.local` e preencha com a URL do PocketBase:
 
 ```bash
 cp .env.example .env.local
@@ -60,15 +65,15 @@ cp .env.example .env.local
 
 ## Estado atual
 
-- **Frontend:** completo (v9.4) — todas as telas implementadas e funcionais
-- **Backend:** pendente — Supabase não conectado, dados vivem em localStorage
+- **Frontend:** completo (v9.5) — todas as telas implementadas e funcionais
+- **Backend:** PocketBase pronto para conectar — veja `pocketbase/schema.md`
 - **Build:** funciona sem erros; `dist/` pronta para deploy estático
 
-## Próximos passos (fase 2 — backend)
+## Conectar o backend (PocketBase)
 
-1. Criar projeto no Supabase e preencher `.env.local`
-2. Criar tabelas: `usuarios`, `modulos`, `recursos`, `reservas`, `filas`, `aulas`, `config`
-3. Migrar `useAuth` para Supabase Auth
-4. Substituir dados de `dados.js` por queries ao Supabase
-5. Implementar RLS policies
-6. Habilitar Realtime nas tabelas `recursos` e `filas`
+1. Criar instância gratuita em [pockethost.io](https://pockethost.io) **ou** baixar o binário para um VPS
+2. Criar as collections conforme `pocketbase/schema.md`
+3. Preencher `VITE_POCKETBASE_URL` no `.env.local`
+4. Criar usuários no painel do PocketBase (collection `users`)
+
+Sem a variável configurada, o app roda em **modo demo** (dados em localStorage).

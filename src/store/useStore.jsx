@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { pb } from '../lib/pocketbase'
 import {
   initialModulos,
   initialRecursos,
@@ -289,17 +289,11 @@ function reducer(state, action) {
       return { ...state, config: { ...state.config, ...action.payload } }
     }
 
-    // Carregamento inicial do Supabase ─────────────────────────────────────────
-    // Mapeia snake_case do banco para camelCase usado no frontend
+    // Carregamento inicial do PocketBase ─────────────────────────────────────────
 
     case 'SET_MODULOS': {
       const modulos = action.payload.map(m => ({
         ...m,
-        antecedencia_maxima:  m.antecedencia_maxima,
-        janela_cancelamento:  m.janela_cancelamento,
-        fila_habilitada:      m.fila_habilitada,
-        tipo_fila:            m.tipo_fila,
-        antecedencia_fila:    m.antecedencia_fila,
         duracao: isNaN(Number(m.duracao)) ? m.duracao : Number(m.duracao),
       }))
       return { ...state, modulos }
@@ -308,7 +302,7 @@ function reducer(state, action) {
     case 'SET_RECURSOS': {
       const recursos = action.payload.map(r => ({
         ...r,
-        moduloId: r.modulo_id,
+        moduloId: r.modulo,  // relation field do PocketBase retorna o ID
       }))
       return { ...state, recursos }
     }
@@ -316,10 +310,8 @@ function reducer(state, action) {
     case 'SET_AULAS': {
       const aulas = action.payload.map(a => ({
         ...a,
-        recursoId:  a.recurso_id,
-        diasSemana: a.dias_semana,
-        horaInicio: a.hora_inicio,
-        horaFim:    a.hora_fim,
+        recursoId:  a.recurso,
+        diasSemana: Array.isArray(a.diasSemana) ? a.diasSemana : JSON.parse(a.diasSemana || '[]'),
       }))
       return { ...state, aulas }
     }
@@ -327,7 +319,7 @@ function reducer(state, action) {
     case 'SET_CONFIG':
       return { ...state, config: { ...state.config, ...action.payload } }
 
-    // Disparado pelo Realtime do Supabase — fase 2 fará refetch; em demo é no-op
+    // Disparado pelo Realtime do PocketBase — recarrega dados do servidor
     case 'SYNC_REALTIME':
       return state
 
@@ -345,29 +337,24 @@ export function StoreProvider({ children }) {
   const [carregando, setCarregando] = useState(false)
 
   useEffect(() => {
-    if (!supabase) return  // sem credenciais → usa dados demo
+    if (!pb) return  // sem credenciais → usa dados demo
     carregarDados()
   }, [])
 
   async function carregarDados() {
     setCarregando(true)
     try {
-      const [
-        { data: modulos },
-        { data: recursos },
-        { data: aulas },
-        { data: config },
-      ] = await Promise.all([
-        supabase.from('modulos').select('*').order('id'),
-        supabase.from('recursos').select('*').order('id'),
-        supabase.from('aulas').select('*').order('id'),
-        supabase.from('config').select('*').limit(1).single(),
+      const [modulos, recursos, aulas, configList] = await Promise.all([
+        pb.collection('modulos').getFullList({ sort: 'ordem' }),
+        pb.collection('recursos').getFullList({ sort: 'nome' }),
+        pb.collection('aulas').getFullList(),
+        pb.collection('config').getFullList({ limit: 1 }),
       ])
 
-      if (modulos)  dispatch({ type: 'SET_MODULOS',  payload: modulos  })
-      if (recursos) dispatch({ type: 'SET_RECURSOS', payload: recursos })
-      if (aulas)    dispatch({ type: 'SET_AULAS',    payload: aulas    })
-      if (config)   dispatch({ type: 'SET_CONFIG',   payload: config   })
+      if (modulos.length)   dispatch({ type: 'SET_MODULOS',  payload: modulos  })
+      if (recursos.length)  dispatch({ type: 'SET_RECURSOS', payload: recursos })
+      if (aulas.length)     dispatch({ type: 'SET_AULAS',    payload: aulas    })
+      if (configList.length) dispatch({ type: 'SET_CONFIG',  payload: configList[0] })
     } catch {
       // falha silenciosa — mantém dados demo
     } finally {
