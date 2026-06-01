@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../hooks/useAuth.jsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { TabBar } from '../../components/ui/index.jsx'
 import DashboardTab from './tabs/DashboardTab.jsx'
 import QuadrasTab   from './tabs/QuadrasTab.jsx'
@@ -30,12 +30,20 @@ export default function AdminDashboard() {
           <h1 className="text-lg font-bold text-slate-800">Painel Admin</h1>
           <p className="text-xs text-slate-500">{user?.nome}</p>
         </div>
-        <button
-          onClick={() => { logout(); navigate('/login') }}
-          className="text-sm text-slate-400 hover:text-red-500 transition-colors"
-        >
-          Sair
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/lousa"
+            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-colors"
+          >
+            🖥️ Lousa
+          </Link>
+          <button
+            onClick={() => { logout(); navigate('/login') }}
+            className="text-sm text-slate-400 hover:text-red-500 transition-colors"
+          >
+            Sair
+          </button>
+        </div>
       </div>
 
       {/* Abas */}

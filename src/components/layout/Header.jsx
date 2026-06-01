@@ -1,6 +1,6 @@
 import { Badge } from '../ui/index.jsx'
 import { useAuth } from '../../hooks/useAuth.jsx'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Header() {
   const { user, logout } = useAuth()
@@ -30,6 +30,15 @@ export default function Header() {
           <Badge variant={perfilVariant[user?.perfil] || 'default'}>
             {perfilLabel[user?.perfil] || user?.perfil}
           </Badge>
+          {user?.perfil === 'admin' && (
+            <Link
+              to="/admin"
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500 text-lg"
+              title="Painel Admin"
+            >
+              ⚙️
+            </Link>
+          )}
           <button
             onClick={handleLogout}
             className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-500"
