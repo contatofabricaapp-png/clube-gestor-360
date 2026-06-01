@@ -34,6 +34,12 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <Link
+            to="/socio"
+            className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-colors"
+          >
+            👤 Sócio
+          </Link>
+          <Link
             to="/lousa"
             className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl transition-colors"
           >

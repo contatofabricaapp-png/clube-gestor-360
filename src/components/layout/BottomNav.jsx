@@ -11,17 +11,16 @@ export default function BottomNav() {
   const isAdmin      = user?.perfil === 'admin'
 
   const items = [
-    ...(isSocio ? [
-      { path: '/socio',          icon: '🏠', label: 'Início'          },
-      { path: '/socio/reservas', icon: '📅', label: 'Reservas'        },
-      { path: '/socio/fila',     icon: '⏳', label: 'Fila'            },
+    ...(isSocio || isAdmin ? [
+      { path: '/socio',          icon: '🏠', label: 'Início'    },
+      { path: '/socio/reservas', icon: '📅', label: 'Reservas'  },
+      { path: '/socio/fila',     icon: '⏳', label: 'Fila'      },
     ] : []),
     ...(isFuncionario || isAdmin ? [
-      { path: '/lousa',          icon: '📋', label: 'Lousa'           },
+      { path: '/lousa',          icon: '📋', label: 'Lousa'     },
     ] : []),
     ...(isAdmin ? [
-      { path: '/admin',          icon: '🏠', label: 'Painel'          },
-      { path: '/admin/config',   icon: '⚙️', label: 'Config'          },
+      { path: '/admin',          icon: '⚙️', label: 'Admin'     },
     ] : []),
   ]
 

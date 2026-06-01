@@ -24,10 +24,10 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/socio" element={<PrivateRoute roles={['socio']}><SocioHome /></PrivateRoute>} />
-        <Route path="/socio/reserva/:moduloId" element={<PrivateRoute roles={['socio']}><ReservaPage /></PrivateRoute>} />
-        <Route path="/socio/reservas" element={<PrivateRoute roles={['socio']}><MinhasReservasPage /></PrivateRoute>} />
-        <Route path="/socio/fila" element={<PrivateRoute roles={['socio']}><FilaPage /></PrivateRoute>} />
+        <Route path="/socio" element={<PrivateRoute roles={['socio', 'admin']}><SocioHome /></PrivateRoute>} />
+        <Route path="/socio/reserva/:moduloId" element={<PrivateRoute roles={['socio', 'admin']}><ReservaPage /></PrivateRoute>} />
+        <Route path="/socio/reservas" element={<PrivateRoute roles={['socio', 'admin']}><MinhasReservasPage /></PrivateRoute>} />
+        <Route path="/socio/fila" element={<PrivateRoute roles={['socio', 'admin']}><FilaPage /></PrivateRoute>} />
 
         <Route path="/lousa" element={
           <PrivateRoute roles={['funcionario', 'admin']}>
