@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export const Card = ({ children, className = '', onClick }) => (
   <div
@@ -107,3 +108,77 @@ export const Notification = ({ message, type = 'info', onClose }) => {
     </div>
   )
 }
+
+// ── ProgressSteps ────────────────────────────────────────────────────────────
+// Uso: <ProgressSteps steps={['Quadra','Horário','Pagamento','Confirmar']} current={1} />
+export const ProgressSteps = ({ steps, current }) => (
+  <div className="flex items-center w-full px-1">
+    {steps.map((label, i) => {
+      const done    = i < current
+      const active  = i === current
+      const future  = i > current
+      return (
+        <div key={i} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center gap-1">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+              done   ? 'bg-emerald-500 text-white' :
+              active ? 'bg-teal-600 text-white ring-4 ring-teal-100' :
+                       'bg-slate-200 text-slate-400'
+            }`}>
+              {done ? '✓' : i + 1}
+            </div>
+            <span className={`text-xs font-medium whitespace-nowrap ${
+              active ? 'text-teal-700' : done ? 'text-emerald-600' : 'text-slate-400'
+            }`}>{label}</span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={`flex-1 h-0.5 mx-1 mb-4 ${done ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+          )}
+        </div>
+      )
+    })}
+  </div>
+)
+
+// ── EmptyState ───────────────────────────────────────────────────────────────
+// Uso: <EmptyState icon="📅" title="Nenhuma reserva" description="..." actionLabel="Reservar" actionPath="/socio" />
+export const EmptyState = ({ icon = '📭', title, description, actionLabel, actionPath, onAction }) => {
+  const navigate = useNavigate()
+  const handleAction = onAction ?? (actionPath ? () => navigate(actionPath) : null)
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      <span className="text-5xl mb-3">{icon}</span>
+      <p className="font-semibold text-slate-700 text-base">{title}</p>
+      {description && <p className="text-slate-400 text-sm mt-1 max-w-xs">{description}</p>}
+      {actionLabel && handleAction && (
+        <button
+          onClick={handleAction}
+          className="mt-4 px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors"
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── SectionHeader ─────────────────────────────────────────────────────────────
+// Uso: <SectionHeader title="Quadras" count={3} action={{ label: '+ Nova', onClick: fn }} />
+export const SectionHeader = ({ title, count, action }) => (
+  <div className="flex items-center justify-between py-1">
+    <div className="flex items-center gap-2">
+      <h3 className="font-bold text-slate-700 text-sm">{title}</h3>
+      {count != null && (
+        <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-2 py-0.5 rounded-full">{count}</span>
+      )}
+    </div>
+    {action && (
+      <button
+        onClick={action.onClick}
+        className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors"
+      >
+        {action.label}
+      </button>
+    )}
+  </div>
+)

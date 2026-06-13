@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import LoginPage from './pages/auth/LoginPage'
+import EsqueciSenhaPage from './pages/auth/EsqueciSenhaPage'
+import CadastroPage from './pages/auth/CadastroPage'
 import SocioHome from './pages/socio/HomePage'
 import ReservaPage from './pages/socio/ReservaPage'
 import MinhasReservasPage from './pages/socio/MinhasReservasPage'
@@ -23,6 +25,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
+        <Route path="/cadastro" element={<CadastroPage />} />
 
         <Route path="/socio" element={<PrivateRoute roles={['socio', 'admin']}><SocioHome /></PrivateRoute>} />
         <Route path="/socio/reserva/:moduloId" element={<PrivateRoute roles={['socio', 'admin']}><ReservaPage /></PrivateRoute>} />

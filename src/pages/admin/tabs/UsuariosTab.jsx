@@ -19,17 +19,15 @@ const STATUS_OPTS = [
 
 const VAZIO = { id: null, nome: '', matricula: '', senha: '', perfil: 'socio', status: 'Ativo' }
 
-const STATUS_BADGE = {
-  Ativo:     'success',
-  Bloqueado: 'danger',
-  Cancelado: 'slate',
-}
+const STATUS_BADGE = { Ativo: 'success', Bloqueado: 'danger', Cancelado: 'slate' }
+const PERFIL_BADGE = { admin: 'purple', funcionario: 'info', socio: 'default' }
 
-const PERFIL_BADGE = {
-  admin:       'purple',
-  funcionario: 'info',
-  socio:       'default',
-}
+const TABS_PERFIL = [
+  { id: 'todos',       label: 'Todos'        },
+  { id: 'socio',       label: 'Sócios'       },
+  { id: 'funcionario', label: 'Funcionários' },
+  { id: 'admin',       label: 'Admins'       },
+]
 
 export default function UsuariosTab() {
   const { state, dispatch } = useStore()
@@ -54,21 +52,12 @@ export default function UsuariosTab() {
       u.matricula.toLowerCase().includes(busca.toLowerCase())
     )
 
-  const abrirNovo = () => {
-    setForm(VAZIO)
-    setErros({})
-    setModalAberto(true)
-  }
-
-  const abrirEditar = (u) => {
-    setForm({ ...u })
-    setErros({})
-    setModalAberto(true)
-  }
+  const abrirNovo   = ()  => { setForm(VAZIO); setErros({}); setModalAberto(true) }
+  const abrirEditar = (u) => { setForm({ ...u }); setErros({}); setModalAberto(true) }
 
   const validar = () => {
     const e = {}
-    if (!form.nome.trim()) e.nome = 'Informe o nome'
+    if (!form.nome.trim())      e.nome      = 'Informe o nome'
     if (!form.matricula.trim()) e.matricula = 'Informe a matrícula'
     if (!form.id && !form.senha.trim()) e.senha = 'Informe a senha inicial'
     setErros(e)
@@ -81,9 +70,7 @@ export default function UsuariosTab() {
     setModalAberto(false)
   }
 
-  const desbloquear = (id) => {
-    dispatch({ type: 'DESBLOQUEAR_USUARIO', payload: { usuarioId: id } })
-  }
+  const desbloquear = (id) => { dispatch({ type: 'DESBLOQUEAR_USUARIO', payload: { usuarioId: id } }) }
 
   const bloquear = () => {
     const ate = new Date(Date.now() + diasBloqueio * 86400000).toISOString().split('T')[0]
@@ -99,39 +86,49 @@ export default function UsuariosTab() {
   return (
     <div className="space-y-4">
 
-      {/* Busca + filtro + novo */}
-      <div className="flex gap-2">
+      {/* Header com contador + botão novo */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-slate-700 text-sm">
+          Usuários
+          <span className="ml-2 text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+            {usuariosFiltrados.length}
+            {busca || filtroPerfil !== 'todos' ? ` de ${usuarios.length}` : ''}
+          </span>
+        </h3>
         <Button variant="primary" size="sm" onClick={abrirNovo}>+ Novo</Button>
       </div>
-      <div className="space-y-2">
-        <input
-          value={busca}
-          onChange={e => setBusca(e.target.value)}
-          placeholder="Buscar por nome ou matrícula..."
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none"
-        />
-        <div className="flex gap-2">
-          {['todos', 'socio', 'funcionario', 'admin'].map(p => (
+
+      {/* Busca unificada */}
+      <input
+        value={busca}
+        onChange={e => setBusca(e.target.value)}
+        placeholder="Buscar por nome ou matrícula..."
+        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-800 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 outline-none"
+      />
+
+      {/* Pills de perfil */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5">
+        {TABS_PERFIL.map(p => {
+          const count = p.id === 'todos' ? usuarios.length : usuarios.filter(u => u.perfil === p.id).length
+          return (
             <button
-              key={p}
-              onClick={() => setFiltroPerfil(p)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                filtroPerfil === p
-                  ? 'bg-teal-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              key={p.id}
+              onClick={() => setFiltroPerfil(p.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+                filtroPerfil === p.id ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {p === 'todos' ? 'Todos' : p === 'socio' ? 'Sócios' : p === 'funcionario' ? 'Funcionários' : 'Admins'}
+              {p.label} <span className="opacity-70">({count})</span>
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
 
       {usuariosFiltrados.length === 0 ? (
         <Card className="p-8 text-center text-slate-400 text-sm">Nenhum usuário encontrado</Card>
       ) : (
         usuariosFiltrados.map(u => (
-          <Card key={u.id} className="p-3 space-y-2">
+          <Card key={u.id} className="p-3 space-y-2 group">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -139,21 +136,21 @@ export default function UsuariosTab() {
                   <Badge variant={PERFIL_BADGE[u.perfil]} size="sm">{u.perfil}</Badge>
                   <Badge variant={STATUS_BADGE[u.status] ?? 'default'} size="sm">{u.status}</Badge>
                 </div>
-                <p className="text-xs text-slate-500">{u.matricula}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{u.matricula}</p>
                 {u.noshow_count > 0 && (
-                  <p className="text-xs text-amber-600">⚠️ {u.noshow_count} no-show(s)</p>
+                  <p className="text-xs text-amber-600 mt-0.5">⚠️ {u.noshow_count} no-show(s)</p>
                 )}
                 {u.bloqueado_ate && (
-                  <p className="text-xs text-red-500">🔒 Bloqueado até {formatDateBR(u.bloqueado_ate)}</p>
+                  <p className="text-xs text-red-500 mt-0.5">🔒 Bloqueado até {formatDateBR(u.bloqueado_ate)}</p>
                 )}
               </div>
               <button
                 onClick={() => abrirEditar(u)}
-                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 text-sm flex-shrink-0"
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 text-sm flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Editar"
               >✏️</button>
             </div>
 
-            {/* Ações rápidas */}
             <div className="flex gap-2 flex-wrap">
               {u.status === 'Bloqueado' ? (
                 <Button variant="success" size="sm" onClick={() => desbloquear(u.id)}>
@@ -175,45 +172,15 @@ export default function UsuariosTab() {
       )}
 
       {/* Modal criar/editar */}
-      <Modal
-        isOpen={modalAberto}
-        title={form.id ? 'Editar Usuário' : 'Novo Usuário'}
-        onClose={() => setModalAberto(false)}
-      >
+      <Modal isOpen={modalAberto} title={form.id ? 'Editar Usuário' : 'Novo Usuário'} onClose={() => setModalAberto(false)}>
         <div className="space-y-4">
-          <Input
-            label="Nome completo"
-            value={form.nome}
-            onChange={e => set('nome', e.target.value)}
-            error={erros.nome}
-          />
-          <Input
-            label="Matrícula"
-            value={form.matricula}
-            onChange={e => set('matricula', e.target.value)}
-            error={erros.matricula}
-          />
+          <Input label="Nome completo" value={form.nome} onChange={e => set('nome', e.target.value)} error={erros.nome} />
+          <Input label="Matrícula" value={form.matricula} onChange={e => set('matricula', e.target.value)} error={erros.matricula} />
           {!form.id && (
-            <Input
-              label="Senha inicial"
-              type="password"
-              value={form.senha}
-              onChange={e => set('senha', e.target.value)}
-              error={erros.senha}
-            />
+            <Input label="Senha inicial" type="password" value={form.senha} onChange={e => set('senha', e.target.value)} error={erros.senha} />
           )}
-          <Select
-            label="Perfil"
-            value={form.perfil}
-            onChange={e => set('perfil', e.target.value)}
-            options={PERFIL_OPTS}
-          />
-          <Select
-            label="Status"
-            value={form.status}
-            onChange={e => set('status', e.target.value)}
-            options={STATUS_OPTS}
-          />
+          <Select label="Perfil" value={form.perfil} onChange={e => set('perfil', e.target.value)} options={PERFIL_OPTS} />
+          <Select label="Status" value={form.status} onChange={e => set('status', e.target.value)} options={STATUS_OPTS} />
           <div className="flex gap-3 pt-2">
             <Button variant="secondary" className="flex-1" onClick={() => setModalAberto(false)}>Cancelar</Button>
             <Button variant="primary" className="flex-1" onClick={salvar}>Salvar</Button>
@@ -222,23 +189,10 @@ export default function UsuariosTab() {
       </Modal>
 
       {/* Modal bloquear */}
-      <Modal
-        isOpen={bloquearId !== null}
-        title="Bloquear Sócio"
-        onClose={() => setBloquearId(null)}
-        size="sm"
-      >
+      <Modal isOpen={bloquearId !== null} title="Bloquear Sócio" onClose={() => setBloquearId(null)} size="sm">
         <div className="space-y-4">
-          <Input
-            label="Dias de bloqueio"
-            type="number"
-            min={1}
-            value={diasBloqueio}
-            onChange={e => setDiasBloqueio(Number(e.target.value))}
-          />
-          <p className="text-xs text-slate-500">
-            O sócio ficará bloqueado por {diasBloqueio} dia(s) a partir de hoje.
-          </p>
+          <Input label="Dias de bloqueio" type="number" min={1} value={diasBloqueio} onChange={e => setDiasBloqueio(Number(e.target.value))} />
+          <p className="text-xs text-slate-500">O sócio ficará bloqueado por {diasBloqueio} dia(s) a partir de hoje.</p>
           <div className="flex gap-3">
             <Button variant="secondary" className="flex-1" onClick={() => setBloquearId(null)}>Cancelar</Button>
             <Button variant="danger" className="flex-1" onClick={bloquear}>Bloquear</Button>
