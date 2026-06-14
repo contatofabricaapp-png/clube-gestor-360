@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Clube Gestor 360</string>
+    <string name="title_activity_main">Clube Gestor 360</string>
+    <string name="package_name">com.clubegestor360.app</string>
+    <string name="custom_url_scheme">com.clubegestor360.app</string>
+</resources>

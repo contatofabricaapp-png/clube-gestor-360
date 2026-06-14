@@ -149,15 +149,15 @@ export default function AulasTab() {
                           🕐 {a.horaInicio}–{a.horaFim} · {diasLabel(a.diasSemana)}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         <button
                           onClick={() => abrirEditar(a)}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 text-sm"
+                          className="p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg text-slate-400 transition-colors"
                           title="Editar"
                         >✏️</button>
                         <button
                           onClick={() => setConfirmarId(a.id)}
-                          className="p-1.5 hover:bg-red-50 rounded-lg text-red-400 text-sm"
+                          className="p-2 hover:bg-red-50 active:bg-red-100 rounded-lg text-red-400 transition-colors"
                           title="Remover"
                         >🗑️</button>
                       </div>

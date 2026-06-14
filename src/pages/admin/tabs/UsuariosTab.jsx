@@ -146,7 +146,7 @@ export default function UsuariosTab() {
               </div>
               <button
                 onClick={() => abrirEditar(u)}
-                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 text-sm flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg text-slate-400 flex-shrink-0 transition-colors"
                 title="Editar"
               >✏️</button>
             </div>

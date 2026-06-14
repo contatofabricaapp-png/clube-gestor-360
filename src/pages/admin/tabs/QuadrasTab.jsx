@@ -128,19 +128,16 @@ export default function QuadrasTab() {
                       <Badge variant={STATUS_BADGE[r.status] ?? 'default'} size="sm">
                         {r.status === 'Manutencao' ? 'Manutenção' : r.status}
                       </Badge>
-                      {/* Hover actions */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => abrirEditar(r)}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 text-sm"
-                          title="Editar"
-                        >✏️</button>
-                        <button
-                          onClick={() => setConfirmarId(r.id)}
-                          className="p-1.5 hover:bg-red-50 rounded-lg text-red-400 text-sm"
-                          title="Remover"
-                        >🗑️</button>
-                      </div>
+                      <button
+                        onClick={() => abrirEditar(r)}
+                        className="p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg text-slate-400 transition-colors"
+                        title="Editar"
+                      >✏️</button>
+                      <button
+                        onClick={() => setConfirmarId(r.id)}
+                        className="p-2 hover:bg-red-50 active:bg-red-100 rounded-lg text-red-400 transition-colors"
+                        title="Remover"
+                      >🗑️</button>
                     </div>
                   </div>
                 </Card>

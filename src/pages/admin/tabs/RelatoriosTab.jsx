@@ -203,7 +203,34 @@ export default function RelatoriosTab() {
           </Card>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            {/* Cards mobile */}
+            <div className="space-y-2 sm:hidden">
+              {reservasPagina.map(r => {
+                const rec   = getRecurso(r.recursoId)
+                const u     = getUsuario(r.usuarioId)
+                const valor = calcularValor(r)
+                return (
+                  <Card key={r.id} className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-800 text-sm truncate">{u?.nome ?? '—'}</p>
+                        <p className="text-xs text-slate-500 truncate">{rec?.nome ?? '—'} · {r.horaInicio}–{r.horaFim}</p>
+                      </div>
+                      <Badge variant={STATUS_BADGE[r.status] ?? 'default'} size="sm">{r.status}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">{formatDateBR(r.data)}</span>
+                      <span className="text-xs font-semibold text-slate-700">
+                        {Number(valor) > 0 ? `R$ ${Number(valor).toLocaleString('pt-BR')}` : '—'}
+                      </span>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Tabela desktop */}
+            <div className="hidden sm:block overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
