@@ -8,12 +8,14 @@ import AulasTab      from './tabs/AulasTab.jsx'
 import UsuariosTab   from './tabs/UsuariosTab.jsx'
 import ConfigTab     from './tabs/ConfigTab.jsx'
 import RelatoriosTab from './tabs/RelatoriosTab.jsx'
+import TorneiosTab   from './tabs/TorneiosTab.jsx'
 
 const ABAS = [
   { id: 'dashboard',  label: '📊 Dashboard' },
   { id: 'quadras',    label: '🎾 Quadras' },
   { id: 'aulas',      label: '📚 Aulas' },
   { id: 'usuarios',   label: '👥 Usuários' },
+  { id: 'torneios',   label: '🏆 Torneios' },
   { id: 'relatorios', label: '📈 Relatórios' },
   { id: 'config',     label: '⚙️ Config' },
 ]
@@ -62,6 +64,7 @@ export default function AdminDashboard() {
         {abaAtiva === 'quadras'   && <QuadrasTab />}
         {abaAtiva === 'aulas'     && <AulasTab />}
         {abaAtiva === 'usuarios'   && <UsuariosTab />}
+        {abaAtiva === 'torneios'   && <TorneiosTab />}
         {abaAtiva === 'relatorios' && <RelatoriosTab />}
         {abaAtiva === 'config'     && <ConfigTab />}
       </main>

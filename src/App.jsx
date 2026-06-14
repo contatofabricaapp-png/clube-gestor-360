@@ -6,6 +6,7 @@ import SocioHome from './pages/socio/HomePage'
 import ReservaPage from './pages/socio/ReservaPage'
 import MinhasReservasPage from './pages/socio/MinhasReservasPage'
 import FilaPage from './pages/socio/FilaPage'
+import TorneiosPage from './pages/socio/TorneiosPage'
 import LousaPage from './pages/funcionario/LousaPage'
 import AdminDashboard from './pages/admin/DashboardPage'
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Route path="/socio/reserva/:moduloId" element={<PrivateRoute roles={['socio', 'admin']}><ReservaPage /></PrivateRoute>} />
       <Route path="/socio/reservas" element={<PrivateRoute roles={['socio', 'admin']}><MinhasReservasPage /></PrivateRoute>} />
       <Route path="/socio/fila" element={<PrivateRoute roles={['socio', 'admin']}><FilaPage /></PrivateRoute>} />
+      <Route path="/socio/torneios" element={<PrivateRoute roles={['socio', 'admin']}><TorneiosPage /></PrivateRoute>} />
 
       <Route path="/lousa" element={
         <PrivateRoute roles={['funcionario', 'admin']}>

@@ -8,19 +8,27 @@ import {
   initialConfig,
   initialReservas,
   initialFilas,
+  initialTorneios,
+  initialGrupos,
+  initialInscricoes,
+  initialPartidas,
 } from '../lib/dados'
 import { hoje, calcularHoraFim } from '../lib/utils'
 
 // ─── Estado inicial ───────────────────────────────────────────────────────────
 
 const estadoInicial = {
-  config:   initialConfig,
-  modulos:  initialModulos,
-  recursos: initialRecursos,
-  aulas:    initialAulas,
-  usuarios: initialUsuarios,
-  reservas: initialReservas,
-  filas:    initialFilas,
+  config:     initialConfig,
+  modulos:    initialModulos,
+  recursos:   initialRecursos,
+  aulas:      initialAulas,
+  usuarios:   initialUsuarios,
+  reservas:   initialReservas,
+  filas:      initialFilas,
+  torneios:   initialTorneios,
+  grupos:     initialGrupos,
+  inscricoes: initialInscricoes,
+  partidas:   initialPartidas,
 }
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
@@ -287,6 +295,128 @@ function reducer(state, action) {
 
     case 'SALVAR_CONFIG': {
       return { ...state, config: { ...state.config, ...action.payload } }
+    }
+
+    // Torneios ─────────────────────────────────────────────────────────────────
+
+    case 'SALVAR_TORNEIO': {
+      const existe = state.torneios.find(t => t.id === action.payload.id)
+      return {
+        ...state,
+        torneios: existe
+          ? state.torneios.map(t => t.id === action.payload.id ? { ...t, ...action.payload } : t)
+          : [...state.torneios, { ...action.payload, id: Date.now() }],
+      }
+    }
+
+    case 'REMOVER_TORNEIO': {
+      const { torneioId } = action.payload
+      return {
+        ...state,
+        torneios:   state.torneios.filter(t => t.id !== torneioId),
+        grupos:     state.grupos.filter(g => g.torneioId !== torneioId),
+        inscricoes: state.inscricoes.filter(i => i.torneioId !== torneioId),
+        partidas:   state.partidas.filter(p => p.torneioId !== torneioId),
+      }
+    }
+
+    case 'INSCREVER_NO_TORNEIO': {
+      const { torneioId, usuarioId } = action.payload
+      // Não duplicar
+      const jaInscrito = state.inscricoes.find(
+        i => i.torneioId === torneioId && i.usuarioId === usuarioId && i.status === 'confirmada'
+      )
+      if (jaInscrito) return state
+      const nova = {
+        id: Date.now(),
+        torneioId,
+        usuarioId,
+        grupoId: null,
+        status: 'confirmada',
+        seed: null,
+        criadaEm: new Date().toISOString(),
+      }
+      return { ...state, inscricoes: [...state.inscricoes, nova] }
+    }
+
+    case 'CANCELAR_INSCRICAO': {
+      return {
+        ...state,
+        inscricoes: state.inscricoes.map(i =>
+          i.id === action.payload.inscricaoId ? { ...i, status: 'cancelada' } : i
+        ),
+      }
+    }
+
+    case 'SALVAR_GRUPO': {
+      const existe = state.grupos.find(g => g.id === action.payload.id)
+      return {
+        ...state,
+        grupos: existe
+          ? state.grupos.map(g => g.id === action.payload.id ? { ...g, ...action.payload } : g)
+          : [...state.grupos, { ...action.payload, id: Date.now() }],
+      }
+    }
+
+    case 'REMOVER_GRUPO': {
+      return {
+        ...state,
+        grupos: state.grupos.filter(g => g.id !== action.payload.grupoId),
+        inscricoes: state.inscricoes.map(i =>
+          i.grupoId === action.payload.grupoId ? { ...i, grupoId: null } : i
+        ),
+      }
+    }
+
+    case 'ATRIBUIR_GRUPO': {
+      // atribui inscricaoId ao grupoId
+      return {
+        ...state,
+        inscricoes: state.inscricoes.map(i =>
+          i.id === action.payload.inscricaoId ? { ...i, grupoId: action.payload.grupoId } : i
+        ),
+      }
+    }
+
+    case 'GERAR_PARTIDAS': {
+      // Remove partidas antigas do torneio e insere as novas
+      const { torneioId, partidas } = action.payload
+      return {
+        ...state,
+        partidas: [
+          ...state.partidas.filter(p => p.torneioId !== torneioId),
+          ...partidas.map((p, i) => ({ ...p, id: Date.now() + i })),
+        ],
+      }
+    }
+
+    case 'LANCAR_RESULTADO': {
+      const { partidaId, placar1, placar2, vencedorId } = action.payload
+      return {
+        ...state,
+        partidas: state.partidas.map(p =>
+          p.id === partidaId
+            ? { ...p, placar1, placar2, vencedorId, status: 'finalizada' }
+            : p
+        ),
+      }
+    }
+
+    case 'SALVAR_PARTIDA': {
+      const existe = state.partidas.find(p => p.id === action.payload.id)
+      return {
+        ...state,
+        partidas: existe
+          ? state.partidas.map(p => p.id === action.payload.id ? { ...p, ...action.payload } : p)
+          : [...state.partidas, { ...action.payload, id: Date.now() }],
+      }
+    }
+
+    case 'REMOVER_PARTIDA': {
+      return {
+        ...state,
+        partidas: state.partidas.filter(p => p.id !== action.payload.partidaId),
+      }
     }
 
     // Carregamento inicial do PocketBase ─────────────────────────────────────────

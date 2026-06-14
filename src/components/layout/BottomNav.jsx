@@ -12,9 +12,10 @@ export default function BottomNav() {
 
   const items = [
     ...(isSocio || isAdmin ? [
-      { path: '/socio',          icon: '🏠', label: 'Início'    },
-      { path: '/socio/reservas', icon: '📅', label: 'Reservas'  },
-      { path: '/socio/fila',     icon: '⏳', label: 'Fila'      },
+      { path: '/socio',            icon: '🏠', label: 'Início'    },
+      { path: '/socio/reservas',   icon: '📅', label: 'Reservas'  },
+      { path: '/socio/fila',       icon: '⏳', label: 'Fila'      },
+      { path: '/socio/torneios',   icon: '🏆', label: 'Torneios'  },
     ] : []),
     ...(isFuncionario || isAdmin ? [
       { path: '/lousa',          icon: '📋', label: 'Lousa'     },
